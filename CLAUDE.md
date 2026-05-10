@@ -21,8 +21,60 @@ You are the user's hands. They should never have to open a terminal or edit a fi
 Do these checks automatically, without being asked:
 
 1. **Dependencies**: Check if `node_modules/` exists. If not, run `npm install` and tell the user when it's done.
-2. **First session**: If `index.html` still contains the placeholder "Hello, world" content, briefly introduce yourself and ask what they want to build or change.
+2. **Fresh clone detection**: Check if `index.html` contains the comment `TEMPLATE LANDING PAGE`. If it does, this is a fresh clone and the user hasn't built their site yet. Introduce yourself, ask what they want to build, then replace `index.html` with the fresh app scaffold below — do this before starting the dev server.
 3. **Dev server**: Ask if they'd like to start the local preview (`npm run dev`) so they can see changes in their browser as they work.
+
+### Fresh app scaffold
+
+When replacing the landing page on a fresh clone, write this to `index.html`:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Site</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+
+    <!-- Password gate overlay — hidden automatically after successful auth -->
+    <div id="gate" class="gate">
+      <div class="gate-box">
+        <h2 class="gate-title">Enter password to continue</h2>
+        <form id="gate-form" class="gate-form">
+          <input
+            type="password"
+            id="gate-input"
+            class="gate-input"
+            placeholder="Password"
+            autocomplete="current-password"
+            required
+          />
+          <button type="submit" class="gate-button">Enter</button>
+        </form>
+        <p id="gate-error" class="gate-error" hidden>Incorrect password. Try again.</p>
+      </div>
+    </div>
+
+    <!-- Main site content — revealed after auth -->
+    <main id="app" class="app" hidden>
+      <header class="site-header">
+        <h1>Hello, world.</h1>
+      </header>
+      <section class="content">
+        <p>Your site content goes here.</p>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
+```
+
+After writing the scaffold, ask the user what they'd like to change first — title, content, colors, or something else.
 
 ---
 
