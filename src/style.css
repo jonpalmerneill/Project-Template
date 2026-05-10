@@ -1,0 +1,235 @@
+/* ============================================================
+   DESIGN CONTROL PANEL
+   Change these variables to restyle the entire site.
+
+   If you have a Figma file: share the URL with Claude and ask it
+   to sync your design tokens here. Claude will map your Figma
+   variables to these properties automatically.
+   ============================================================ */
+
+:root {
+  /* Colors — Figma: Background/Canvas, Text/Primary, Primary/Brand, Border/Stroke, Text/Secondary, Surface/Raised */
+  --color-bg: #ffffff;          /* Page background */
+  --color-text: #1a1a1a;        /* Main text color */
+  --color-primary: #3b5bdb;     /* Buttons, links, accents */
+  --color-border: #e0e0e0;      /* Borders, dividers */
+  --color-muted: #6b7280;       /* Secondary/helper text */
+  --color-surface: #f8f9fa;     /* Card backgrounds, input fields */
+
+  /* Typography — Figma: Body typeface, Heading/Display typeface, Text/Base size */
+  /* Google Font: add <link> tags in index.html (see comment there), then update the values below.
+     Custom font: place .woff2 files in public/fonts/ and add @font-face (see example below). */
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: var(--font-body); /* Same as body by default — swap for a display font */
+  --font-size-base: 1rem;       /* 16px base */
+  --font-size-sm: 0.875rem;     /* 14px */
+  --font-size-lg: 1.125rem;     /* 18px */
+  --line-height: 1.6;
+
+  /* Spacing — Figma: Spacing/1 through Spacing/5 (or equivalent scale) */
+  --space-xs: 0.25rem;   /* 4px */
+  --space-sm: 0.5rem;    /* 8px */
+  --space-md: 1rem;      /* 16px */
+  --space-lg: 2rem;      /* 32px */
+  --space-xl: 4rem;      /* 64px */
+
+  /* Layout */
+  --max-width: 720px;
+  --radius: 6px;         /* Border radius for inputs, buttons, cards */
+
+  /* Motion — Figma: Animation/Ease, Animation/Duration */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);     /* smooth in-out */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);  /* slight overshoot, feels alive */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);            /* quick start, gentle stop */
+  --duration-fast: 150ms;    /* hover states, small UI feedback */
+  --duration-base: 250ms;    /* most transitions */
+  --duration-slow: 400ms;    /* larger reveals */
+}
+
+
+/* ============================================================
+   RESET
+   Normalizes browser defaults so styles are predictable.
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* ============================================================
+   CUSTOM FONTS
+   Place .woff2 files in public/fonts/, then uncomment and edit.
+   ============================================================ */
+
+/*
+@font-face {
+  font-family: 'MyFont';
+  src: url('/fonts/MyFont.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+*/
+
+
+/* ============================================================
+   MOTION — prefers-reduced-motion
+   Always respect this OS/browser accessibility setting.
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+
+html {
+  font-size: var(--font-size-base);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  line-height: 1.2;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9em;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) / 2);
+  padding: 0.1em 0.35em;
+}
+
+
+/* ============================================================
+   PASSWORD GATE OVERLAY
+   ============================================================ */
+
+.gate {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg);
+  z-index: 100;
+}
+
+.gate-box {
+  width: 100%;
+  max-width: 360px;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.gate-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  text-align: center;
+}
+
+.gate-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.gate-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-base);
+  font-family: var(--font-body);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.gate-input:focus {
+  border-color: var(--color-primary);
+}
+
+.gate-button {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-base);
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: #fff;
+  background-color: var(--color-primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.gate-button:hover {
+  opacity: 0.85;
+}
+
+.gate-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gate-error {
+  font-size: var(--font-size-sm);
+  color: #c0392b;
+  text-align: center;
+}
+
+
+/* ============================================================
+   MAIN APP CONTENT
+   ============================================================ */
+
+.app {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg);
+}
+
+.site-header {
+  margin-bottom: var(--space-lg);
+}
+
+.site-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  color: var(--color-muted);
+}

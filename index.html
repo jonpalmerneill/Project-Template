@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Site</title>
+
+    <!--
+      Google Fonts: paste your <link> tags here, then update --font-body
+      or --font-heading in src/style.css to match the font name.
+      Get embed code at: fonts.google.com → select font → Get font → Get embed code
+
+      Example:
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    -->
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+
+    <!-- Password gate overlay — hidden automatically after successful auth -->
+    <div id="gate" class="gate">
+      <div class="gate-box">
+        <h2 class="gate-title">Enter password to continue</h2>
+        <form id="gate-form" class="gate-form">
+          <input
+            type="password"
+            id="gate-input"
+            class="gate-input"
+            placeholder="Password"
+            autocomplete="current-password"
+            required
+          />
+          <button type="submit" class="gate-button">Enter</button>
+        </form>
+        <p id="gate-error" class="gate-error" hidden>Incorrect password. Try again.</p>
+      </div>
+    </div>
+
+    <!-- Main site content — revealed after auth -->
+    <main id="app" class="app" hidden>
+      <header class="site-header">
+        <h1>Hello, world.</h1>
+      </header>
+
+      <section class="content">
+        <p>This is your starter site. Edit <code>index.html</code> to change this content.</p>
+        <p>Change colors and fonts in <code>src/style.css</code> — look for the <code>:root</code> block at the top.</p>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
