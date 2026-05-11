@@ -283,6 +283,104 @@ All colors must use CSS variables — hardcoded hex values won't respond to the 
 2. Add an `@font-face` block in `src/style.css` (there's a commented-out example already there)
 3. Update `--font-body` or `--font-heading` in `:root`
 
+### Add reactive UI without a framework (Alpine.js)
+
+Alpine.js adds reactivity to HTML attributes — no component files, no new conventions. Use when multiple elements need to react to the same data: tabs, accordions, filtered lists, conditional forms.
+
+**Vanilla JS vs Alpine:** Vanilla for one-off handlers and animations. Alpine when you'd otherwise manually sync the DOM across multiple elements.
+
+1. Run `npm install alpinejs`
+2. At the top of `src/main.js`, before any other init:
+   ```js
+   import Alpine from 'alpinejs'
+   Alpine.start()
+   ```
+
+**Core directives:**
+- `x-data="{ key: val }"` — reactive scope on any element
+- `x-text="key"` — binds text content
+- `x-show="condition"` — toggles visibility
+- `x-if="condition"` — adds/removes from DOM
+- `x-for="item in items"` — loops over arrays
+- `x-model="key"` — two-way input binding
+- `@click="..."` — event listener
+- `:class="{ active: condition }"` — conditional classes
+- `x-init="..."` — run code on init
+- `x-transition` — built-in CSS transitions
+
+**Common patterns:**
+
+Toggle:
+```html
+<div x-data="{ open: false }">
+  <button @click="open = !open">Toggle</button>
+  <div x-show="open" x-transition>Content</div>
+</div>
+```
+
+Tabs:
+```html
+<div x-data="{ tab: 'about' }">
+  <button @click="tab = 'about'" :class="{ active: tab === 'about' }">About</button>
+  <button @click="tab = 'work'"  :class="{ active: tab === 'work' }">Work</button>
+  <div x-show="tab === 'about'">About content</div>
+  <div x-show="tab === 'work'">Work content</div>
+</div>
+```
+
+Live filter:
+```html
+<div x-data="{ search: '', items: ['Apple', 'Banana', 'Cherry'] }">
+  <input x-model="search" placeholder="Filter..." />
+  <template x-for="item in items.filter(i => i.toLowerCase().includes(search.toLowerCase()))">
+    <li x-text="item"></li>
+  </template>
+</div>
+```
+
+Fetch and render:
+```html
+<div x-data="{ posts: [] }" x-init="fetch('https://jsonplaceholder.typicode.com/posts?_limit=5').then(r=>r.json()).then(d=>posts=d)">
+  <template x-for="post in posts" :key="post.id">
+    <article><h3 x-text="post.title"></h3><p x-text="post.body"></p></article>
+  </template>
+</div>
+```
+
+**Global store** (share state across separate parts of the page):
+```js
+// src/main.js — before Alpine.start()
+Alpine.store('cart', {
+  items: [],
+  get count() { return this.items.length },
+  add(item)  { this.items.push(item) },
+  remove(id) { this.items = this.items.filter(i => i.id !== id) },
+})
+```
+```html
+<span x-text="$store.cart.count"></span>
+<button @click="$store.cart.add({ id: 1, name: 'Item' })">Add to cart</button>
+```
+
+**Extracting component logic** (for complex components, keep logic in JS):
+```js
+Alpine.data('accordion', () => ({
+  active: null,
+  toggle(id) { this.active = this.active === id ? null : id },
+  isOpen(id) { return this.active === id },
+}))
+```
+```html
+<div x-data="accordion()">
+  <div x-data="{ id: 1 }">
+    <button @click="toggle(id)">Section</button>
+    <div x-show="isOpen(id)">Content</div>
+  </div>
+</div>
+```
+
+Use Alpine for reactive state, vanilla JS / GSAP / Motion.dev for animations. Trigger GSAP from `@click` handlers alongside Alpine state changes — don't try to drive animations through Alpine state.
+
 ### Add a page loader
 
 Full-screen overlay that fills a progress bar 0 → 100 then fades out. Fills quickly to ~80% on its own, waits for `window.load`, then completes.

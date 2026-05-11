@@ -344,6 +344,142 @@ Switches between light and dark themes using a `data-theme` attribute on `<html>
 2. Add an `@font-face` block in `src/style.css` (there's a commented-out example already there)
 3. Update `--font-body` or `--font-heading` in `:root`
 
+### Add reactive UI without a framework (Alpine.js)
+
+Alpine.js adds reactivity directly to HTML attributes — no component files, no build step changes, no new conventions. Use it when multiple elements need to react to shared state: tabs, accordions, live-filtering lists, forms with conditional fields, a cart count in a nav.
+
+**Vanilla JS vs Alpine — when to reach for Alpine:**
+- Vanilla JS: one-off event handlers, animations, interactions that don't depend on shared state
+- Alpine: multiple elements that need to stay in sync with changing data — show/hide conditions, filtered lists, form-driven UI, anything where you'd otherwise be manually syncing the DOM
+
+**Install:**
+
+1. Run `npm install alpinejs`
+
+2. Add to the top of `src/main.js` — before any other init:
+   ```js
+   import Alpine from 'alpinejs'
+   Alpine.start()
+   ```
+
+That's the full setup. Alpine scans the DOM automatically and activates anything with `x-` attributes.
+
+**Core directives:**
+
+| Directive | What it does |
+|-----------|-------------|
+| `x-data="{ key: value }"` | Declares a reactive scope on any element |
+| `x-text="key"` | Sets element text content from state |
+| `x-show="condition"` | Toggles visibility (`display: none/block`) |
+| `x-if="condition"` | Adds/removes from the DOM entirely |
+| `x-for="item in items"` | Loops over an array |
+| `x-model="key"` | Two-way input binding |
+| `@click="..."` | Event listener (shorthand for `x-on:click`) |
+| `:class="..."` | Bind attributes to state (shorthand for `x-bind:class`) |
+| `x-init="..."` | Run code when the component initializes |
+| `x-transition` | Built-in enter/leave CSS transitions |
+
+**Common patterns:**
+
+Show/hide toggle:
+```html
+<div x-data="{ open: false }">
+  <button @click="open = !open">Toggle</button>
+  <div x-show="open" x-transition>Hidden content</div>
+</div>
+```
+
+Tabs:
+```html
+<div x-data="{ tab: 'about' }">
+  <button @click="tab = 'about'" :class="{ active: tab === 'about' }">About</button>
+  <button @click="tab = 'work'"  :class="{ active: tab === 'work' }">Work</button>
+  <div x-show="tab === 'about'">About content</div>
+  <div x-show="tab === 'work'">Work content</div>
+</div>
+```
+
+Live search / filter:
+```html
+<div x-data="{ search: '', items: ['Apple', 'Banana', 'Cherry'] }">
+  <input x-model="search" placeholder="Filter..." />
+  <ul>
+    <template x-for="item in items.filter(i => i.toLowerCase().includes(search.toLowerCase()))">
+      <li x-text="item"></li>
+    </template>
+  </ul>
+</div>
+```
+
+Fetch and render a list:
+```html
+<div
+  x-data="{ posts: [] }"
+  x-init="fetch('https://jsonplaceholder.typicode.com/posts?_limit=5')
+    .then(r => r.json()).then(d => posts = d)"
+>
+  <template x-for="post in posts" :key="post.id">
+    <article>
+      <h3 x-text="post.title"></h3>
+      <p x-text="post.body"></p>
+    </article>
+  </template>
+</div>
+```
+
+**Global store (share state across separate parts of the page):**
+
+Register in `src/main.js` before `Alpine.start()`:
+```js
+import Alpine from 'alpinejs'
+
+Alpine.store('cart', {
+  items: [],
+  get count() { return this.items.length },
+  add(item)   { this.items.push(item) },
+  remove(id)  { this.items = this.items.filter(i => i.id !== id) },
+})
+
+Alpine.start()
+```
+
+Use anywhere in the HTML — no prop passing, no imports:
+```html
+<span x-text="$store.cart.count"></span>
+<button @click="$store.cart.add({ id: 1, name: 'Item' })">Add to cart</button>
+```
+
+**Extracting reusable component logic:**
+
+For complex components, define the data object in JS rather than inline HTML:
+```js
+// src/main.js
+Alpine.data('accordion', () => ({
+  active: null,
+  toggle(id) { this.active = this.active === id ? null : id },
+  isOpen(id) { return this.active === id },
+}))
+```
+```html
+<div x-data="accordion()">
+  <div x-data="{ id: 1 }">
+    <button @click="toggle(id)">Section 1</button>
+    <div x-show="isOpen(id)">Content 1</div>
+  </div>
+  <div x-data="{ id: 2 }">
+    <button @click="toggle(id)">Section 2</button>
+    <div x-show="isOpen(id)">Content 2</div>
+  </div>
+</div>
+```
+
+**Notes:**
+- Alpine coexists with vanilla JS — use Alpine for reactive state, vanilla JS / GSAP / Motion.dev for animations
+- Don't try to manage animation state through Alpine; trigger GSAP or Motion.dev from `@click` handlers alongside Alpine state changes
+- `x-transition` applies simple CSS fade/scale transitions automatically — for anything more complex, trigger a GSAP animation instead
+
+---
+
 ### Add a page loader
 
 A full-screen overlay that animates a progress bar and counter from 0 → 100, then fades out to reveal the site. Progress fills quickly to ~80% on its own, waits for the page to fully load, then completes.
