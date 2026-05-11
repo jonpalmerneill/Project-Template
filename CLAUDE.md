@@ -477,6 +477,88 @@ Stripe is the standard for web payments. The key rule: **payment logic runs serv
 5. Add `STRIPE_SECRET_KEY` and `SITE_URL` to their Vercel environment variables (never `VITE_` prefixed — server only)
 6. Add `stripe` as a server-side dependency: `npm install stripe`
 
+### Add a contact form
+
+Two approaches — pick based on what the user needs:
+
+**Option A — Formspree (recommended for most users)**
+No backend code required. Formspree receives submissions and emails them to the user.
+
+**Tell the user to:**
+1. Go to [formspree.io](https://formspree.io) and create a free account
+2. Click **New Form**, give it a name, and copy the form endpoint URL (looks like `https://formspree.io/f/xyzabcde`)
+
+**You do:**
+3. Add the form HTML to `index.html`:
+   ```html
+   <form id="contact-form" class="contact-form" action="https://formspree.io/f/xyzabcde" method="POST">
+     <label for="contact-name">Name</label>
+     <input type="text" id="contact-name" name="name" required />
+
+     <label for="contact-email">Email</label>
+     <input type="email" id="contact-email" name="email" required />
+
+     <label for="contact-message">Message</label>
+     <textarea id="contact-message" name="message" rows="5" required></textarea>
+
+     <button type="submit" class="btn-submit">Send message</button>
+     <p id="contact-status" class="contact-status" hidden></p>
+   </form>
+   ```
+4. Add JS to handle the async submission and show a success/error message:
+   ```js
+   const form = document.getElementById('contact-form')
+   const status = document.getElementById('contact-status')
+
+   form.addEventListener('submit', async (e) => {
+     e.preventDefault()
+     const data = new FormData(form)
+     const res = await fetch(form.action, {
+       method: 'POST',
+       body: data,
+       headers: { Accept: 'application/json' }
+     })
+     status.hidden = false
+     if (res.ok) {
+       status.textContent = 'Message sent — thanks!'
+       form.reset()
+     } else {
+       status.textContent = 'Something went wrong. Please try again.'
+     }
+   })
+   ```
+5. Add form styles to `src/style.css` — inputs, labels, button, and status message
+
+**Option B — Vercel serverless function + Resend**
+Use this when the user wants custom email templates, to send from their own domain, or to store submissions in Supabase.
+
+**You do:**
+1. Run `npm install resend`
+2. Create `api/contact.js`:
+   ```js
+   import { Resend } from 'resend'
+   const resend = new Resend(process.env.RESEND_API_KEY)
+
+   export default async function handler(req, res) {
+     if (req.method !== 'POST') return res.status(405).end()
+     const { name, email, message } = req.body
+     const { error } = await resend.emails.send({
+       from: 'Contact Form <onboarding@resend.dev>',
+       to: process.env.CONTACT_EMAIL,
+       subject: `New message from ${name}`,
+       text: `From: ${name} <${email}>\n\n${message}`,
+     })
+     if (error) return res.status(500).json({ error })
+     res.json({ success: true })
+   }
+   ```
+3. Build the same form HTML as Option A, but point it at `/api/contact` with `fetch`
+4. Add `Content-Type: application/json` header and send `JSON.stringify({ name, email, message })`
+
+**Tell the user to:**
+5. Sign up at [resend.com](https://resend.com) and create an API key
+6. Add `RESEND_API_KEY` and `CONTACT_EMAIL` to their Vercel environment variables
+
 ### Add third-party embeds
 
 Many sites need embeds from external tools. These are paste-and-done — no npm install, no JS to write.
