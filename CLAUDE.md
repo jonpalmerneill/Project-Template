@@ -708,6 +708,289 @@ Use this when the user wants full-screen visual effects (CRT scanlines, distorti
 
 ---
 
+### Add smooth scrolling (Lenis)
+
+Lenis replaces native scroll with a smooth, momentum-based version. Use it on any site where fluid scrolling is part of the feel — portfolios, landing pages, editorial sites.
+
+**You do:**
+
+1. Run `npm install lenis`
+
+2. Add to `src/main.js` before other init:
+   ```js
+   import Lenis from 'lenis'
+
+   // Skip on reduced motion preference
+   const lenis = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+     ? null
+     : new Lenis({
+         duration: 1.2,
+         easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+       })
+
+   if (lenis) {
+     function raf(time) {
+       lenis.raf(time)
+       requestAnimationFrame(raf)
+     }
+     requestAnimationFrame(raf)
+   }
+   ```
+
+3. If also using Motion.dev `scroll()` for scroll-driven animations, pass Lenis scroll events through:
+   ```js
+   lenis?.on('scroll', () => ScrollObserver.update?.())
+   ```
+   For most use cases with `inView()`, no extra wiring is needed — Lenis fires standard scroll events that IntersectionObserver picks up automatically.
+
+**Common options:**
+
+| Option | Default | Effect |
+|--------|---------|--------|
+| `duration` | `1.2` | Scroll duration in seconds — higher = more glide |
+| `easing` | exponential | Any `t → t` function |
+| `orientation` | `'vertical'` | `'horizontal'` for horizontal scroll |
+| `infinite` | `false` | Infinite scroll loop |
+
+To stop/start manually (e.g. when a modal is open): `lenis.stop()` / `lenis.start()`
+
+---
+
+### Add a custom cursor
+
+Hides the default cursor and replaces it with a styled element that follows the mouse. The cursor scales or changes style when hovering interactive elements.
+
+**Skip on touch devices** — always check for coarse pointer before adding a custom cursor.
+
+**You do:**
+
+1. Add to `index.html` immediately after `<body>`:
+   ```html
+   <div id="cursor" class="cursor" aria-hidden="true"></div>
+   ```
+
+2. Create `src/cursor.js`:
+   ```js
+   export function initCursor() {
+     // Don't show on touch screens or when reduced motion is preferred
+     if (window.matchMedia('(pointer: coarse)').matches) return
+     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+     const cursor = document.getElementById('cursor')
+     let mouseX = 0, mouseY = 0
+     let curX = 0, curY = 0
+     const lag = 0.12 // lower = more lag behind the mouse
+
+     document.addEventListener('mousemove', e => {
+       mouseX = e.clientX
+       mouseY = e.clientY
+       cursor.style.opacity = '1'
+     })
+
+     // Hide cursor when mouse leaves the window
+     document.addEventListener('mouseleave', () => { cursor.style.opacity = '0' })
+
+     // Smoothly follow the mouse each frame
+     function tick() {
+       curX += (mouseX - curX) * lag
+       curY += (mouseY - curY) * lag
+       cursor.style.transform = `translate(${curX}px, ${curY}px) translate(-50%, -50%)`
+       requestAnimationFrame(tick)
+     }
+     tick()
+
+     // Expand cursor on hover over interactive elements
+     document.querySelectorAll('a, button, [data-cursor-hover]').forEach(el => {
+       el.addEventListener('mouseenter', () => cursor.classList.add('cursor--hover'))
+       el.addEventListener('mouseleave', () => cursor.classList.remove('cursor--hover'))
+     })
+   }
+   ```
+
+3. Call from `src/main.js`:
+   ```js
+   import { initCursor } from './cursor.js'
+   initCursor()
+   ```
+
+4. Add to `src/style.css`:
+   ```css
+   body { cursor: none; }
+
+   .cursor {
+     position: fixed;
+     top: 0;
+     left: 0;
+     width: 10px;
+     height: 10px;
+     border-radius: 50%;
+     background: var(--color-text);
+     pointer-events: none;
+     z-index: 99999;
+     opacity: 0;
+     will-change: transform;
+     transition: width 0.2s ease, height 0.2s ease,
+                 background 0.2s ease, border 0.2s ease,
+                 opacity 0.3s ease;
+   }
+
+   .cursor--hover {
+     width: 36px;
+     height: 36px;
+     background: transparent;
+     border: 1px solid var(--color-text);
+   }
+   ```
+
+**Variations:**
+- Instant cursor (no lag): remove the `tick()` RAF loop and set position directly in `mousemove`
+- Add `data-cursor-hover` to any element beyond links/buttons to trigger the hover state
+- Different states per element type: check `el.tagName` or a `data-cursor` attribute inside the forEach
+
+---
+
+### Add page transitions
+
+Smooth animated transition between pages. An overlay fades in when a link is clicked, the new page loads, then the overlay fades out — giving the impression of a continuous experience.
+
+**This requires the same transition HTML and JS on every page** in the site.
+
+**You do:**
+
+1. Add to every `.html` file in the project, immediately after `<body>`:
+   ```html
+   <div id="page-transition" class="page-transition" aria-hidden="true"></div>
+   ```
+
+2. Create `src/transitions.js`:
+   ```js
+   export function initPageTransitions() {
+     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+     const overlay = document.getElementById('page-transition')
+
+     // Fade out the overlay on page enter (runs on every page load)
+     overlay.classList.add('is-visible')
+     requestAnimationFrame(() => requestAnimationFrame(() => {
+       overlay.classList.remove('is-visible')
+     }))
+
+     // Fade in the overlay before navigating away
+     document.addEventListener('click', e => {
+       const link = e.target.closest('a')
+       if (!link) return
+       if (link.target === '_blank') return          // skip new-tab links
+       if (link.hostname !== location.hostname) return // skip external links
+       if (link.href === location.href) return        // skip same-page links
+
+       e.preventDefault()
+       const href = link.href
+
+       overlay.classList.add('is-visible')
+       overlay.addEventListener('transitionend', () => {
+         window.location.href = href
+       }, { once: true })
+     })
+   }
+   ```
+
+3. Call from `src/main.js` (and any other page entry files):
+   ```js
+   import { initPageTransitions } from './transitions.js'
+   initPageTransitions()
+   ```
+
+4. Add to `src/style.css`:
+   ```css
+   .page-transition {
+     position: fixed;
+     inset: 0;
+     z-index: 9998;
+     background: var(--color-bg);
+     opacity: 0;
+     pointer-events: none;
+     transition: opacity 0.4s ease;
+   }
+   .page-transition.is-visible {
+     opacity: 1;
+     pointer-events: all;
+   }
+   ```
+
+**Notes:**
+- The double `requestAnimationFrame` on entrance is intentional — it waits for the browser to paint the visible overlay before removing the class so the CSS transition actually fires
+- Adjust `0.4s` to control transition speed
+- For a slide instead of a fade, animate `transform: translateY()` instead of `opacity`
+- For more complex transitions (per-route animations, shared element transitions), consider Barba.js — but it requires significant setup
+
+---
+
+### Add a carousel (Swiper)
+
+Swiper is the standard for touch-friendly, responsive carousels. Use it for image galleries, portfolio case studies, testimonials, or any horizontally scrolling content.
+
+**You do:**
+
+1. Run `npm install swiper`
+
+2. Add the HTML structure to `index.html`:
+   ```html
+   <div class="swiper">
+     <div class="swiper-wrapper">
+       <div class="swiper-slide"><!-- slide content --></div>
+       <div class="swiper-slide"><!-- slide content --></div>
+       <div class="swiper-slide"><!-- slide content --></div>
+     </div>
+     <!-- Optional controls -->
+     <div class="swiper-pagination"></div>
+     <button class="swiper-button-prev" aria-label="Previous slide"></button>
+     <button class="swiper-button-next" aria-label="Next slide"></button>
+   </div>
+   ```
+
+3. Initialize in `src/main.js` or a dedicated `src/carousel.js`:
+   ```js
+   import Swiper from 'swiper'
+   import { Navigation, Pagination, Autoplay } from 'swiper/modules'
+   import 'swiper/css'
+   import 'swiper/css/navigation'
+   import 'swiper/css/pagination'
+
+   const swiper = new Swiper('.swiper', {
+     modules: [Navigation, Pagination, Autoplay],
+     loop: true,
+     slidesPerView: 1,
+     spaceBetween: 24,
+     pagination: { el: '.swiper-pagination', clickable: true },
+     navigation: {
+       nextEl: '.swiper-button-next',
+       prevEl: '.swiper-button-prev',
+     },
+     // Uncomment to autoplay:
+     // autoplay: { delay: 4000, disableOnInteraction: false },
+
+     // Responsive breakpoints:
+     breakpoints: {
+       640:  { slidesPerView: 2 },
+       1024: { slidesPerView: 3 },
+     },
+   })
+   ```
+
+**Common Swiper modules:**
+
+| Module | Import | What it does |
+|--------|--------|-------------|
+| `Navigation` | `swiper/modules` | Prev/next buttons |
+| `Pagination` | `swiper/modules` | Dot or fraction indicators |
+| `Autoplay` | `swiper/modules` | Auto-advances slides |
+| `FreeMode` | `swiper/modules` | Drag freely, no snapping |
+| `Thumbs` | `swiper/modules` | Thumbnail navigation |
+
+To override Swiper's default button styles, add CSS to `src/style.css` targeting `.swiper-button-next`, `.swiper-button-prev`, and `.swiper-pagination-bullet`.
+
+---
+
 ### Site content
 Edit `index.html`. The main content lives inside `<main id="app" class="app">`.
 
