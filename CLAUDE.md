@@ -1556,6 +1556,130 @@ L.geoJSON(geojsonData, {
 
 ---
 
+### Add a 3D map (Mapbox GL JS)
+
+Use Mapbox GL JS when the design calls for 3D terrain, building extrusion, satellite imagery, or a custom-styled base map. Leaflet is the right default for simple 2D marker maps — reach for Mapbox when the map is a centerpiece of the experience.
+
+**Leaflet vs Mapbox GL JS:**
+
+| | Leaflet | Mapbox GL JS |
+|--|---------|-------------|
+| API key | None — free | Free tier at mapbox.com |
+| Rendering | Raster tiles (PNG) | GPU-accelerated vector tiles |
+| 3D terrain | No | Yes |
+| 3D buildings | No | Yes |
+| Satellite imagery | No | Yes |
+| Custom styles | Limited | Full control via Mapbox Studio |
+
+**Tell the user to:**
+1. Create a free account at [mapbox.com](https://mapbox.com)
+2. Copy their **Default public token** from the dashboard (starts with `pk.`)
+
+**You do:**
+
+1. Add `VITE_MAPBOX_TOKEN=pk.your_token_here` to `.env` and the Vercel dashboard
+
+2. Run `npm install mapbox-gl`
+
+3. Add a container to `index.html`:
+   ```html
+   <div id="map" class="map-container"></div>
+   ```
+
+4. Create `src/map.js`:
+   ```js
+   import mapboxgl from 'mapbox-gl'
+   import 'mapbox-gl/dist/mapbox-gl.css'
+
+   export function initMap(containerId = 'map') {
+     mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
+
+     const map = new mapboxgl.Map({
+       container: containerId,
+       style: 'mapbox://styles/mapbox/streets-v12', // see style options below
+       center: [-122.4194, 37.7749], // [lng, lat]
+       zoom: 12,
+       pitch: 45,  // tilt for 3D effect (0 = flat, up to 85 = steep)
+       bearing: 0, // rotation in degrees
+     })
+
+     // Navigation controls (zoom in/out, compass, pitch toggle)
+     map.addControl(new mapboxgl.NavigationControl())
+
+     // Add 3D terrain and building extrusion after map loads
+     map.on('load', () => {
+       // 3D terrain
+       map.addSource('mapbox-dem', {
+         type: 'raster-dem',
+         url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+         tileSize: 512,
+       })
+       map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 })
+
+       // 3D building extrusion
+       map.addLayer({
+         id: '3d-buildings',
+         source: 'composite',
+         'source-layer': 'building',
+         filter: ['==', 'extrude', 'true'],
+         type: 'fill-extrusion',
+         minzoom: 15,
+         paint: {
+           'fill-extrusion-color': '#aaa',
+           'fill-extrusion-height': ['get', 'height'],
+           'fill-extrusion-base': ['get', 'min_height'],
+           'fill-extrusion-opacity': 0.6,
+         },
+       })
+     })
+
+     return map
+   }
+   ```
+
+5. Call from `src/main.js`:
+   ```js
+   import { initMap } from './map.js'
+   const map = initMap()
+   ```
+
+6. Add to `src/style.css`:
+   ```css
+   .map-container {
+     width: 100%;
+     height: 500px; /* adjust as needed */
+   }
+   ```
+
+**Common patterns:**
+
+Add a marker with a popup:
+```js
+new mapboxgl.Marker()
+  .setLngLat([-122.4194, 37.7749])
+  .setPopup(new mapboxgl.Popup().setHTML('<strong>San Francisco</strong>'))
+  .addTo(map)
+```
+
+Fly the camera to a location:
+```js
+map.flyTo({ center: [-73.9857, 40.7484], zoom: 14, pitch: 60, duration: 2000 })
+```
+
+**Style options:**
+
+| Style | What it looks like |
+|-------|--------------------|
+| `mapbox://styles/mapbox/streets-v12` | Default street map |
+| `mapbox://styles/mapbox/satellite-streets-v12` | Satellite with road labels |
+| `mapbox://styles/mapbox/outdoors-v12` | Terrain, trails, elevation |
+| `mapbox://styles/mapbox/dark-v11` | Dark base map |
+| `mapbox://styles/mapbox/light-v11` | Light/minimal base map |
+
+**API key note:** The `pk.` token is a public token — safe to bundle in browser code. Restrict it to your domain in the Mapbox dashboard under **Access tokens → URL restrictions** before going live.
+
+---
+
 ### Use a spreadsheet as a database (Airtable)
 
 Airtable is a spreadsheet with a REST API — good for prototyping content-driven sites where non-developers need to edit data directly.

@@ -779,6 +779,69 @@ Multiple markers: `locations.forEach(({ lat, lng, label }) => L.marker([lat, lng
 
 Fit bounds to all markers: `map.fitBounds(L.featureGroup(markers).getBounds().pad(0.1))`
 
+### Add a 3D map (Mapbox GL JS)
+
+Use Mapbox when the design needs 3D terrain, building extrusion, satellite imagery, or a custom-styled base map. Leaflet is right for simple 2D marker maps — Mapbox for 3D or polished experiences.
+
+**Leaflet vs Mapbox GL JS:** Leaflet = 2D, free, no key. Mapbox = 3D terrain + buildings, satellite, custom styles, GPU-rendered — free API key required from mapbox.com.
+
+**You do:**
+
+1. Ask user to sign up at mapbox.com and copy their public token (`pk.` prefix)
+2. Add `VITE_MAPBOX_TOKEN=pk.xxx` to `.env` and Vercel dashboard
+3. Run `npm install mapbox-gl`
+4. Add `<div id="map" class="map-container"></div>` to `index.html`
+5. Create `src/map.js`:
+   ```js
+   import mapboxgl from 'mapbox-gl'
+   import 'mapbox-gl/dist/mapbox-gl.css'
+
+   export function initMap(containerId = 'map') {
+     mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
+
+     const map = new mapboxgl.Map({
+       container: containerId,
+       style: 'mapbox://styles/mapbox/streets-v12',
+       center: [-122.4194, 37.7749], // [lng, lat]
+       zoom: 12,
+       pitch: 45,  // tilt for 3D (0 = flat)
+       bearing: 0,
+     })
+
+     map.addControl(new mapboxgl.NavigationControl())
+
+     map.on('load', () => {
+       // 3D terrain
+       map.addSource('mapbox-dem', { type: 'raster-dem', url: 'mapbox://mapbox.mapbox-terrain-dem-v1', tileSize: 512 })
+       map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 })
+
+       // 3D buildings
+       map.addLayer({
+         id: '3d-buildings', source: 'composite', 'source-layer': 'building',
+         filter: ['==', 'extrude', 'true'], type: 'fill-extrusion', minzoom: 15,
+         paint: {
+           'fill-extrusion-color': '#aaa',
+           'fill-extrusion-height': ['get', 'height'],
+           'fill-extrusion-base': ['get', 'min_height'],
+           'fill-extrusion-opacity': 0.6,
+         },
+       })
+     })
+
+     return map
+   }
+   ```
+6. Call `initMap()` from `src/main.js`
+7. Add `.map-container { width: 100%; height: 500px; }` to `src/style.css`
+
+Add a marker: `new mapboxgl.Marker().setLngLat([lng, lat]).setPopup(new mapboxgl.Popup().setHTML('<b>Label</b>')).addTo(map)`
+
+Fly to location: `map.flyTo({ center: [lng, lat], zoom: 14, pitch: 60, duration: 2000 })`
+
+Style options: `streets-v12`, `satellite-streets-v12`, `outdoors-v12`, `dark-v11`, `light-v11` — all at `mapbox://styles/mapbox/[style]`
+
+Token is public (`pk.` prefix) — safe to bundle. Restrict to your domain in the Mapbox dashboard before launch.
+
 ### Use a spreadsheet as a database (Airtable)
 
 Airtable is a spreadsheet with a REST API — good for content-driven prototypes where non-developers need to edit data.
