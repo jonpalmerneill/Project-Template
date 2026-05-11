@@ -697,6 +697,89 @@ Chart.js is the right default — approachable API, good docs, no framework requ
 2. Add a `<canvas>` element to `index.html` where the chart should appear
 3. Import and initialize in `src/main.js` or a dedicated `src/charts.js`
 
+For more complex data visualization, D3.js is the right next step — steep learning curve, ask before reaching for it.
+
+### Add a map (Leaflet + OpenStreetMap)
+
+Leaflet + OpenStreetMap is free with no API key required. Use Mapbox GL JS if the user needs satellite imagery or styled base maps (free key at mapbox.com).
+
+**You do:**
+1. Run `npm install leaflet`
+2. Add `<div id="map" class="map-container"></div>` to `index.html`
+3. Initialize in `src/map.js`:
+   ```js
+   import L from 'leaflet'
+   import 'leaflet/dist/leaflet.css'
+   import markerIcon from 'leaflet/dist/images/marker-icon.png'
+   import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+   delete L.Icon.Default.prototype._getIconUrl
+   L.Icon.Default.mergeOptions({ iconUrl: markerIcon, shadowUrl: markerShadow })
+
+   const map = L.map('map').setView([51.505, -0.09], 13)
+   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+     maxZoom: 19,
+   }).addTo(map)
+   ```
+4. Add `.map-container { width: 100%; height: 400px; }` to `src/style.css`
+
+Multiple markers: `locations.forEach(({ lat, lng, label }) => L.marker([lat, lng]).addTo(map).bindPopup(label))`
+
+Fit bounds to all markers: `map.fitBounds(L.featureGroup(markers).getBounds().pad(0.1))`
+
+### Use a spreadsheet as a database (Airtable)
+
+Airtable is a spreadsheet with a REST API — good for content-driven prototypes where non-developers need to edit data.
+
+**Tell the user to:**
+1. Create a free account at [airtable.com](https://airtable.com) and set up a Base with their data
+2. Go to [airtable.com/create/tokens](https://airtable.com/create/tokens) → create a token with **data.records:read** scope
+3. Note their Base ID from the URL: `airtable.com/appXXXXXXXXXXXXXX/...`
+
+**You do:**
+4. Add `VITE_AIRTABLE_TOKEN` and `VITE_AIRTABLE_BASE_ID` to `.env` and Vercel dashboard
+5. Fetch records:
+   ```js
+   const res = await fetch(
+     `https://api.airtable.com/v0/${import.meta.env.VITE_AIRTABLE_BASE_ID}/${encodeURIComponent('TableName')}?maxRecords=100`,
+     { headers: { Authorization: `Bearer ${import.meta.env.VITE_AIRTABLE_TOKEN}` } }
+   )
+   const { records } = await res.json() // record.fields matches column names
+   ```
+
+For write operations, proxy through a Vercel serverless function to keep the token server-side.
+
+**Airtable vs Supabase:** Airtable for non-developer content editing and simple read-heavy data. Supabase for relational data, auth, real-time, or write-heavy apps.
+
+### Prototype with real external data
+
+**No API key needed:**
+
+| API | What it provides | Base URL |
+|-----|-----------------|----------|
+| JSONPlaceholder | Fake users, posts, comments | `https://jsonplaceholder.typicode.com` |
+| Open-Meteo | Real weather forecasts + history | `https://api.open-meteo.com/v1/forecast` |
+| REST Countries | Country data, flags, currencies | `https://restcountries.com/v3.1` |
+| Open Library | Book metadata and covers | `https://openlibrary.org/api/books` |
+
+Quick example — real weather with zero setup:
+```js
+const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.5&longitude=-0.12&current=temperature_2m,wind_speed_10m')
+const { current } = await res.json()
+```
+
+**Free tier, API key required:**
+
+| API | What it provides |
+|-----|-----------------|
+| ProPublica Congress | US voting records, bills, members |
+| The Guardian | News articles back to 1999 |
+| NASA APIs | Space imagery, asteroid data, Mars photos |
+| Alpha Vantage | Stock prices and financial data |
+| NewsAPI | Headlines from 80,000+ sources |
+
+Add keys as `VITE_` prefixed env vars. For rate-limited APIs, fetch once via a Vercel serverless function and cache results in Supabase.
+
 ### Add icons
 
 No library needed — inline SVGs are the right approach. Find icons at [lucide.dev](https://lucide.dev) or [heroicons.com](https://heroicons.com), copy the SVG, and paste into `index.html`. Color with `color: var(--color-primary)`.

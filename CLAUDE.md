@@ -1382,6 +1382,192 @@ Chart.js is the right default — approachable API, good docs, no framework requ
 
 For more complex data visualization (custom layouts, interactive graphics), D3.js is the right next step — but it has a steep learning curve. Ask the user what they need before reaching for D3.
 
+### Add a map (Leaflet + OpenStreetMap)
+
+Leaflet paired with OpenStreetMap tiles is completely free with no API key required — the right default for any mapping feature.
+
+**You do:**
+
+1. Run `npm install leaflet`
+
+2. Add a container to `index.html`:
+   ```html
+   <div id="map" class="map-container"></div>
+   ```
+
+3. Initialize in `src/main.js` or a dedicated `src/map.js`:
+   ```js
+   import L from 'leaflet'
+   import 'leaflet/dist/leaflet.css'
+
+   // Fix default marker icon paths (Vite asset handling quirk)
+   import markerIcon from 'leaflet/dist/images/marker-icon.png'
+   import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+   delete L.Icon.Default.prototype._getIconUrl
+   L.Icon.Default.mergeOptions({ iconUrl: markerIcon, shadowUrl: markerShadow })
+
+   const map = L.map('map').setView([51.505, -0.09], 13) // [lat, lng], zoom
+
+   // OpenStreetMap tiles — free, no API key needed
+   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+     maxZoom: 19,
+   }).addTo(map)
+
+   // Add a marker
+   L.marker([51.505, -0.09])
+     .addTo(map)
+     .bindPopup('A popup message.')
+     .openPopup()
+   ```
+
+4. Add CSS to `src/style.css`:
+   ```css
+   .map-container {
+     width: 100%;
+     height: 400px; /* adjust as needed */
+   }
+   ```
+
+**Common patterns:**
+
+Multiple markers from an array:
+```js
+const locations = [
+  { lat: 51.505, lng: -0.09, label: 'London' },
+  { lat: 48.857, lng: 2.352, label: 'Paris' },
+]
+const markers = locations.map(({ lat, lng, label }) =>
+  L.marker([lat, lng]).addTo(map).bindPopup(label)
+)
+```
+
+Fit map bounds to show all markers:
+```js
+const group = L.featureGroup(markers)
+map.fitBounds(group.getBounds().pad(0.1))
+```
+
+GeoJSON layer (country borders, routes, polygons):
+```js
+L.geoJSON(geojsonData, {
+  style: { color: '#000', weight: 1 },
+  onEachFeature: (feature, layer) => layer.bindPopup(feature.properties.name),
+}).addTo(map)
+```
+
+**Note:** For satellite imagery, styled base maps, or vector tiles, Mapbox GL JS offers these but requires a free API key from [mapbox.com](https://mapbox.com).
+
+---
+
+### Use a spreadsheet as a database (Airtable)
+
+Airtable is a spreadsheet with a REST API — good for prototyping content-driven sites where non-developers need to edit data directly.
+
+**Tell the user to:**
+1. Go to [airtable.com](https://airtable.com) and create a free account
+2. Create a new **Base** and add their data — each row is a record, each column a field
+3. Go to [airtable.com/create/tokens](https://airtable.com/create/tokens) → **Create token**
+4. Give it **data.records:read** scope (add **write** scope if they need to submit data)
+5. Note their **Base ID** from the URL: `airtable.com/appXXXXXXXXXXXXXX/...`
+
+**You do:**
+6. Add `VITE_AIRTABLE_TOKEN` and `VITE_AIRTABLE_BASE_ID` to `.env` (and Vercel dashboard)
+
+7. Fetch records:
+   ```js
+   const baseId = import.meta.env.VITE_AIRTABLE_BASE_ID
+   const token  = import.meta.env.VITE_AIRTABLE_TOKEN
+   const table  = 'YourTableName' // matches the tab name in Airtable
+
+   const res = await fetch(
+     `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(table)}?maxRecords=100`,
+     { headers: { Authorization: `Bearer ${token}` } }
+   )
+   const { records } = await res.json()
+   // record.fields matches your column names exactly
+   ```
+
+Filtering and sorting:
+```js
+const params = new URLSearchParams({
+  filterByFormula: `{Status}='Published'`,
+  'sort[0][field]': 'CreatedAt',
+  'sort[0][direction]': 'desc',
+})
+const res = await fetch(`https://api.airtable.com/v0/${baseId}/${table}?${params}`, ...)
+```
+
+Writing a record (proxy through a Vercel serverless function in production to keep the token server-side):
+```js
+await fetch(`https://api.airtable.com/v0/${baseId}/${table}`, {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ records: [{ fields: { Name: 'Jon', Email: 'jon@example.com' } }] }),
+})
+```
+
+**Airtable vs Supabase:**
+- Airtable: non-developer content editing, simple read-heavy data, spreadsheet-friendly workflow
+- Supabase: relational data, user auth, real-time updates, write-heavy apps, complex queries
+
+---
+
+### Prototype with real external data
+
+These APIs are free for prototyping and don't require payment details.
+
+**No API key needed — use immediately:**
+
+| API | What it provides | Base URL |
+|-----|-----------------|----------|
+| JSONPlaceholder | Fake users, posts, comments, todos | `https://jsonplaceholder.typicode.com` |
+| Open-Meteo | Real weather forecasts + historical data | `https://api.open-meteo.com/v1/forecast` |
+| REST Countries | Country data, flags, currencies, population | `https://restcountries.com/v3.1` |
+| Open Library | Book metadata and cover images | `https://openlibrary.org/api/books` |
+
+Quick example — real weather data with zero setup:
+```js
+const res = await fetch(
+  'https://api.open-meteo.com/v1/forecast?latitude=51.5&longitude=-0.12&current=temperature_2m,wind_speed_10m'
+)
+const { current } = await res.json()
+console.log(current.temperature_2m) // °C
+```
+
+**Free tier, API key required:**
+
+| API | What it provides | Sign up |
+|-----|-----------------|---------|
+| ProPublica Congress | US voting records, bills, members | [propublica.org/datastore](https://www.propublica.org/datastore/api/propublica-congress-api) |
+| The Guardian | News articles back to 1999 | [open-platform.theguardian.com](https://open-platform.theguardian.com) |
+| NASA | Space imagery, asteroid data, Mars rover photos | [api.nasa.gov](https://api.nasa.gov) |
+| Alpha Vantage | Stock prices and financial data | [alphavantage.co](https://alphavantage.co) |
+| NewsAPI | Headlines from 80,000+ sources | [newsapi.org](https://newsapi.org) |
+
+Add keys as `VITE_` prefixed env vars in `.env` and the Vercel dashboard.
+
+**Standard fetch pattern with error handling:**
+```js
+async function fetchData(url, options = {}) {
+  const res = await fetch(url, options)
+  if (!res.ok) throw new Error(`API error: ${res.status}`)
+  return res.json()
+}
+
+try {
+  const data = await fetchData('https://api.example.com/endpoint')
+  // render data into the DOM
+} catch (err) {
+  console.error(err)
+  // show an error state to the user
+}
+```
+
+**Rate limit tip:** For APIs with low rate limits, fetch once via a Vercel serverless function, cache the result in a Supabase table, and serve from there — avoids hitting limits and speeds up the UI.
+
+---
+
 ### Add icons
 
 No library needed — inline SVGs are the right approach for vanilla JS. They're themeable via CSS (`currentColor`), accessible, and zero added bundle weight.
