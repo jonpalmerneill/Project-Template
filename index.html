@@ -52,23 +52,35 @@
         padding: 0 1.5rem;
       }
 
-      hr {
-        border: none;
-        border-top: 1px solid #000;
+      .ascii-hr {
+        overflow: hidden;
+        white-space: nowrap;
         margin: 1.25rem 0;
+        line-height: 1.75;
+      }
+      .ascii-hr::before {
+        content: '==============================================================================================================================================================================================================================================================================================================';
       }
 
       /* ── Hero ── */
       .hero { padding: 4rem 0 0; }
 
-      .hero h1 {
-        font-family: 'jgs9', 'Courier New', monospace;
-        font-size: 44px;
-        font-weight: normal;
-        line-height: 1.3;
-        margin-bottom: 1rem;
-        text-transform: uppercase;
+      pre {
+        font-family: inherit;
+        font-size: inherit;
+        white-space: pre;
+        margin: 0;
+        line-height: inherit;
       }
+
+      .ascii-banner {
+        line-height: 1.5;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+      }
+
+      .btn-frame-top { line-height: 1; margin-bottom: 0.75rem; overflow: hidden; }
+      .btn-frame-bottom { line-height: 1; margin-top: 0.75rem; overflow: hidden; }
 
       .tagline { margin-bottom: 1.75rem; line-height: 1.5; }
 
@@ -191,15 +203,21 @@
     <div class="container">
 
       <div class="hero">
-        <h1>Prototype by prompting</h1>
+        <pre class="ascii-banner">  . : . : . : . : . : . : . : . : . : . : . : . : .
+  :                                               :
+  :   PROTOTYPE BY PROMPTING                      :
+  :                                               :
+  . : . : . : . : . : . : . : . : . : . : . : . : .</pre>
         <p class="tagline">A web prototype starter with Vite, Vercel, and Supabase already configured. Open it in Cursor, describe your idea, and your AI handles the rest.</p>
+        <pre class="btn-frame-top">┌─────────────────────────────────────────────────┐</pre>
         <div class="hero-actions">
           <a href="https://github.com/jonpalmerneill/Project-Template/generate" class="btn btn-primary">Use this template</a>
           <a href="https://github.com/jonpalmerneill/Project-Template" class="btn btn-secondary">View on GitHub</a>
         </div>
+        <pre class="btn-frame-bottom">└─────────────────────────────────────────────────┘</pre>
       </div>
 
-      <hr>
+      <div class="ascii-hr"></div>
 
       <details class="section">
         <summary class="section-label">What's included</summary>
@@ -291,7 +309,7 @@
         </div>
       </details>
 
-      <hr>
+      <div class="ascii-hr"></div>
 
       <details class="section">
         <summary class="section-label">How it works</summary>
@@ -327,7 +345,7 @@
         </div>
       </details>
 
-      <hr>
+      <div class="ascii-hr"></div>
 
       <details class="section">
         <summary class="section-label">What to ask</summary>
@@ -350,7 +368,7 @@
 
     <footer>
       <div class="container">
-        <span>Made by CARNEVALE</span>
+        <span>Made by <a href="https://carnevale.co" style="color: rgb(245, 86, 47);">CARNEVALE</a></span>
       </div>
     </footer>
 
