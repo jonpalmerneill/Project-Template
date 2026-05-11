@@ -1221,6 +1221,53 @@ Use this when the user wants custom email templates, to send from their own doma
 
 Copy the embed code from the tool (YouTube, Calendly, Typeform, etc.) and paste into `index.html`. No npm install needed.
 
+### Make it installable on mobile (PWA)
+
+Adds install-to-home-screen on iOS and Android from a Vercel URL. Opens full-screen, no browser chrome, works offline. No app store needed.
+
+1. Run `npm install -D vite-plugin-pwa`
+2. Add `public/icon-192.png` (192×192) and `public/icon-512.png` (512×512). Generate from logo at realfavicongenerator.net if needed.
+3. Update `vite.config.js` — add `VitePWA` to the existing plugins array:
+   ```js
+   import { VitePWA } from 'vite-plugin-pwa'
+   // inside the plugins array, alongside the existing local-api middleware:
+   VitePWA({
+     registerType: 'autoUpdate',
+     manifest: {
+       name: 'My App',
+       short_name: 'My App',
+       description: 'A short description',
+       theme_color: '#000000',
+       background_color: '#ffffff',
+       display: 'standalone',
+       start_url: '/',
+       icons: [
+         { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+         { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+         { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+       ],
+     },
+     workbox: {
+       globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+     },
+   }),
+   ```
+   Replace `name`, `short_name`, `description`, `theme_color`, `background_color` to match the app.
+4. Add to `<head>` in `index.html`:
+   ```html
+   <meta name="apple-mobile-web-app-capable" content="yes" />
+   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+   <meta name="apple-mobile-web-app-title" content="My App" />
+   <link rel="apple-touch-icon" href="/icon-192.png" />
+   ```
+5. Deploy to Vercel — service worker requires HTTPS, won't activate on localhost.
+
+**To install:**
+- iOS (Safari): Open Vercel URL → Share → Add to Home Screen → Add
+- Android (Chrome): Open Vercel URL → menu (⋮) → Add to Home screen
+
+`display: 'standalone'` removes browser chrome. Use `'browser'` to keep the URL bar. `registerType: 'autoUpdate'` keeps the cached app up to date silently. Match `background_color` to the app background for a seamless iOS splash screen.
+
 ### Disable password protection
 1. Remove `initAuth()` from `src/main.js`
 2. Remove the `<div id="gate">` block from `index.html`

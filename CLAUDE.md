@@ -2453,6 +2453,85 @@ Many sites need embeds from external tools. These are paste-and-done — no npm 
 
 For embeds that load a `<script>` tag asynchronously (Calendly, HubSpot forms, etc.), place the `<script>` tag just before `</body>` in `index.html` to avoid blocking page render.
 
+### Make it installable on mobile (PWA)
+
+Progressive Web Apps can be installed to the home screen on iOS and Android directly from a Vercel URL — no app store required. Once installed they open full-screen with no browser chrome and work offline after the first visit.
+
+**When to use:** When the prototype needs to feel like a native app on a real device — for user testing, stakeholder demos, or any experience that benefits from full-screen mobile.
+
+**You do:**
+
+1. Run `npm install -D vite-plugin-pwa`
+
+2. Add two PNG icons to `public/`:
+   - `public/icon-192.png` (192×192px)
+   - `public/icon-512.png` (512×512px)
+
+   If the user doesn't have icons ready, generate them from their logo at [realfavicongenerator.net](https://realfavicongenerator.net) or use a simple colored square as a placeholder.
+
+3. Update `vite.config.js` — add `VitePWA` to the existing plugins array:
+   ```js
+   import { defineConfig, loadEnv } from 'vite'
+   import { VitePWA } from 'vite-plugin-pwa'
+
+   export default defineConfig(({ mode }) => {
+     const env = loadEnv(mode, process.cwd(), '')
+     return {
+       plugins: [
+         VitePWA({
+           registerType: 'autoUpdate',
+           manifest: {
+             name: 'My App',
+             short_name: 'My App',
+             description: 'A short description of your app',
+             theme_color: '#000000',
+             background_color: '#ffffff',
+             display: 'standalone',
+             start_url: '/',
+             icons: [
+               { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+               { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+               { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+             ],
+           },
+           workbox: {
+             globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+           },
+         }),
+         {
+           // existing local-api middleware stays here unchanged
+           name: 'local-api',
+           // ...
+         },
+       ],
+     }
+   })
+   ```
+
+   Replace `name`, `short_name`, `description`, `theme_color`, and `background_color` with values matching the app. `theme_color` controls the Android status bar color.
+
+4. Add iOS meta tags to `<head>` in `index.html`:
+   ```html
+   <meta name="apple-mobile-web-app-capable" content="yes" />
+   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+   <meta name="apple-mobile-web-app-title" content="My App" />
+   <link rel="apple-touch-icon" href="/icon-192.png" />
+   ```
+
+5. Deploy to Vercel — the service worker only activates on HTTPS, so it won't work on localhost.
+
+**Tell the user how to install:**
+- **iOS (Safari):** Open the Vercel URL → tap Share → "Add to Home Screen" → tap Add
+- **Android (Chrome):** Open the Vercel URL → tap menu (⋮) → "Add to Home screen", or tap the install prompt in the address bar
+
+**Notes:**
+- `display: 'standalone'` removes all browser chrome (address bar, navigation) — use `'browser'` to keep the URL bar
+- `registerType: 'autoUpdate'` silently updates the cached app on next visit after a new deploy — no stale version issues
+- Offline support is automatic once the service worker is active — all cached assets load from cache when there's no network
+- iOS generates a splash screen automatically from the icon and `background_color` — set `background_color` to match the app's background so the transition looks seamless
+
+---
+
 ### Disable password protection
 1. Remove `initAuth()` from `src/main.js`
 2. Remove the `<div id="gate">` block from `index.html`
