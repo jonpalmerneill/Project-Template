@@ -1,4 +1,4 @@
-# Project Context for Claude Code
+# Project Context
 
 This is a minimal vanilla JS website starter, built with Vite, optionally connected to Supabase, and deployed via Vercel + GitHub.
 
@@ -9,7 +9,7 @@ This is a minimal vanilla JS website starter, built with Vite, optionally connec
 You are the user's hands. They should never have to open a terminal or edit a file manually — you do that for them using your tools.
 
 **Core behaviors:**
-- Run terminal commands yourself with your Bash tool. Never show a command and ask the user to run it.
+- Run terminal commands yourself using Cursor's terminal tool. Never show a command and ask the user to run it.
 - Edit files directly. Never show a diff or code block and ask the user to paste it in.
 - When you need information only the user has (a GitHub URL, a Supabase key, a password), ask for it in plain language, then act on it immediately.
 - Ask one clarifying question at a time — don't front-load multiple questions.
@@ -175,25 +175,20 @@ Supabase Auth is already available — no new service needed. Clarify what they 
 
 ## Working with Figma
 
-The Figma MCP server is available when the user has it configured in Claude Code. When a user shares a Figma URL, use these tools proactively — don't wait to be asked.
+When a user shares a Figma URL, use Cursor's Figma integration or MCP tools if available. If not available, ask the user to describe the design or share screenshots.
 
-### When the user shares a Figma URL
+### When the user shares a Figma URL or screenshot
 
-Call `get_design_context` with the `fileKey` and `nodeId` from the URL. This returns reference code, a screenshot, and metadata.
-
-**The reference code is React + Tailwind — always adapt it to this project:**
-- Convert JSX to plain HTML
-- Convert Tailwind utility classes to CSS, using existing `src/style.css` custom properties where they match (`--color-primary` instead of `text-blue-600`, `--space-md` instead of `p-4`, etc.)
+**Adapt all designs to this project's patterns:**
+- Build in plain HTML, not JSX or React
+- Use existing `src/style.css` custom properties where they match (`--color-primary`, `--space-md`, etc.)
 - Add new HTML inside `<main id="app" class="app">` in `index.html`
 - Add new CSS classes to `src/style.css` — never use `style=""` attributes
-- Use the screenshot as the source of truth for layout and visual intent, not the reference code literally
+- Use the screenshot as the source of truth for layout and visual intent
 
-### Syncing a Figma design token library
+### Syncing design tokens from Figma
 
-When the user wants to pull their Figma color/typography/spacing system into the project:
-
-1. Call `get_variable_defs` on their Figma file node to extract all variable values
-2. Map them to the `:root` block in `src/style.css` using this guide:
+Map Figma token names to CSS variables using this guide:
 
 | CSS variable | Maps from Figma semantic |
 |---|---|
@@ -210,21 +205,9 @@ When the user wants to pull their Figma color/typography/spacing system into the
 | `--ease-default` | Animation/Ease / Motion/Standard |
 | `--duration-base` | Animation/Duration / Motion/Base |
 
-3. Update values in-place — keep the CSS variable names as-is
-4. If a Figma token doesn't map cleanly, use the closest match and add a comment
-
-### Implementing a specific Figma component or section
-
-1. Call `get_design_context` on the specific node URL
-2. If the file has a connected library, call `search_design_system` first to check for existing component mappings
-3. Look at the screenshot — use it as the layout reference, not the generated code
-4. Build it as plain HTML + CSS class in `src/style.css`, reusing existing variables
-5. For interactive behavior, add vanilla JS in `src/main.js`
-
 ### What not to do with Figma output
 
-- Don't paste the reference code directly — it's React + Tailwind, not vanilla HTML + CSS
-- Don't add Tailwind, React, or any framework unless the user explicitly asks
+- Don't use React, JSX, or Tailwind — this is vanilla HTML + CSS
 - Don't use `style=""` inline attributes — all styles go in `src/style.css`
 - Don't create new CSS files — add to the existing `src/style.css`
 - Don't hardcode hex values that already exist as CSS variables
@@ -267,22 +250,11 @@ inView('#section', ({ target }) => {
 scroll(animate('#progress-bar', { scaleX: [0, 1] }))
 ```
 
-Use `--duration-*` and `--ease-*` from `src/style.css` for timing consistency. The `prefers-reduced-motion` block in `src/style.css` suppresses CSS transitions automatically — for JS animations, also check:
-
-```js
-const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-```
+Use `--duration-*` and `--ease-*` from `src/style.css` for timing consistency.
 
 ### Add a 3D scene (Three.js)
 
 Three.js is not pre-installed — install it when the user asks for 3D or WebGL.
-
-**When not to reach for Three.js:**
-- 2D canvas animations → use the Canvas 2D API or motion.dev
-- CSS-only 3D effects (card flips, parallax depth) → CSS `transform: perspective()`
-- Embedded 3D from a design tool → Spline exports an `<iframe>` embed, no Three.js needed
-
-**When to install Three.js:** the user wants a 3D scene, WebGL background, interactive 3D object, particle system with depth, or to load a 3D model.
 
 **You do:**
 
@@ -293,29 +265,22 @@ Three.js is not pre-installed — install it when the user asks for 3D or WebGL.
    <div id="scene-container" class="scene-container"></div>
    ```
 
-3. Create `src/scene.js` using this canonical structure — don't skip the resize handler or pixel ratio cap:
+3. Create `src/scene.js` using this canonical structure:
    ```js
    import * as THREE from 'three'
 
    export function initScene(containerId = 'scene-container') {
      const container = document.getElementById(containerId)
 
-     // Scene, camera, renderer
      const scene = new THREE.Scene()
-     const camera = new THREE.PerspectiveCamera(
-       60,
-       container.clientWidth / container.clientHeight,
-       0.1,
-       1000
-     )
+     const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000)
      camera.position.z = 5
 
      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
      renderer.setSize(container.clientWidth, container.clientHeight)
-     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // cap at 2× — 3× is wasteful
+     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
      container.appendChild(renderer.domElement)
 
-     // Resize — use ResizeObserver, not window resize, so it tracks the container
      const observer = new ResizeObserver(() => {
        camera.aspect = container.clientWidth / container.clientHeight
        camera.updateProjectionMatrix()
@@ -323,18 +288,14 @@ Three.js is not pre-installed — install it when the user asks for 3D or WebGL.
      })
      observer.observe(container)
 
-     // Animation loop
      const clock = new THREE.Clock()
      let animationId
 
      function tick() {
        animationId = requestAnimationFrame(tick)
-       const elapsed = clock.getElapsedTime()
-       // ── your animation code here ──
        renderer.render(scene, camera)
      }
 
-     // Respect prefers-reduced-motion — pause animation if requested
      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)')
      if (!prefersReduced.matches) tick()
      prefersReduced.addEventListener('change', e => {
@@ -342,7 +303,6 @@ Three.js is not pre-installed — install it when the user asks for 3D or WebGL.
        else tick()
      })
 
-     // Cleanup — call this if the scene is ever removed
      function dispose() {
        observer.disconnect()
        cancelAnimationFrame(animationId)
@@ -358,31 +318,6 @@ Three.js is not pre-installed — install it when the user asks for 3D or WebGL.
    import { initScene } from './scene.js'
    const { scene, camera } = initScene()
    ```
-
-5. Add sizing CSS to `src/style.css`:
-   ```css
-   .scene-container {
-     width: 100%;
-     height: 100vh; /* or whatever height the design calls for */
-   }
-   ```
-
-**Loading 3D models (GLTF/GLB):**
-```js
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-
-const loader = new GLTFLoader()
-loader.load('/models/my-model.glb', (gltf) => {
-  scene.add(gltf.scene)
-})
-```
-Place `.glb` files in `public/models/`. Good free model sources: [Sketchfab](https://sketchfab.com), [Poly Haven](https://polyhaven.com), [Market.pmnd.rs](https://market.pmnd.rs).
-
-**Using motion.dev to animate Three.js values:**
-```js
-import { animate } from 'motion'
-animate(mesh.position, { y: [0, 2] }, { duration: 1, easing: 'ease-in-out' })
-```
 
 ### Site content
 Edit `index.html`. The main content lives inside `<main id="app" class="app">`.
@@ -406,99 +341,20 @@ Chart.js is the right default — approachable API, good docs, no framework requ
 
 **You do:**
 1. Run `npm install chart.js`
-2. Add a `<canvas>` element to `index.html` where the chart should appear:
-   ```html
-   <canvas id="my-chart"></canvas>
-   ```
-3. Import and initialize in `src/main.js` or a dedicated `src/charts.js`:
-   ```js
-   import { Chart, registerables } from 'chart.js'
-   Chart.register(...registerables)
-
-   const ctx = document.getElementById('my-chart')
-   new Chart(ctx, {
-     type: 'bar', // bar, line, pie, doughnut, scatter, etc.
-     data: {
-       labels: ['Jan', 'Feb', 'Mar'],
-       datasets: [{ label: 'Sales', data: [12, 19, 8] }]
-     },
-     options: { responsive: true }
-   })
-   ```
-
-For more complex data visualization (custom layouts, interactive graphics), D3.js is the right next step — but it has a steep learning curve. Ask the user what they need before reaching for D3.
+2. Add a `<canvas>` element to `index.html` where the chart should appear
+3. Import and initialize in `src/main.js` or a dedicated `src/charts.js`
 
 ### Add icons
 
-No library needed — inline SVGs are the right approach for vanilla JS. They're themeable via CSS (`currentColor`), accessible, and zero added bundle weight.
-
-**When the user asks for an icon:**
-1. Find it at [lucide.dev](https://lucide.dev) (clean, consistent set) or [heroicons.com](https://heroicons.com)
-2. Copy the SVG source and paste it directly into `index.html`
-3. Size with CSS (`width`/`height`) and color with `color: var(--color-primary)` — SVG strokes inherit `currentColor` automatically
-
-If the user needs many icons across many pages, install `lucide` as a dependency:
-```js
-import { createIcons, icons } from 'lucide'
-createIcons({ icons }) // auto-replaces <i data-lucide="name"> elements
-```
+No library needed — inline SVGs are the right approach. Find icons at [lucide.dev](https://lucide.dev) or [heroicons.com](https://heroicons.com), copy the SVG, and paste into `index.html`. Color with `color: var(--color-primary)`.
 
 ### Add payments (Stripe)
 
-Stripe is the standard for web payments. The key rule: **payment logic runs server-side** — never handle payment amounts or confirmations in browser JS.
-
-**You do:**
-1. Run `npm install @stripe/stripe-js`
-2. Create `api/create-checkout.js` — a Vercel serverless function that creates a Stripe Checkout session:
-   ```js
-   import Stripe from 'stripe'
-   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
-
-   export default async function handler(req, res) {
-     const session = await stripe.checkout.sessions.create({
-       payment_method_types: ['card'],
-       line_items: [{ price: 'price_xxxxx', quantity: 1 }],
-       mode: 'payment',
-       success_url: `${process.env.SITE_URL}/success.html`,
-       cancel_url: `${process.env.SITE_URL}`,
-     })
-     res.json({ url: session.url })
-   }
-   ```
-3. In browser JS, call the endpoint and redirect:
-   ```js
-   const res = await fetch('/api/create-checkout', { method: 'POST' })
-   const { url } = await res.json()
-   window.location.href = url
-   ```
-
-**Tell the user to:**
-4. Install the Stripe CLI from [stripe.com/docs/stripe-cli](https://stripe.com/docs/stripe-cli) (needed for local webhook testing)
-5. Add `STRIPE_SECRET_KEY` and `SITE_URL` to their Vercel environment variables (never `VITE_` prefixed — server only)
-6. Add `stripe` as a server-side dependency: `npm install stripe`
+Payment logic always runs server-side. Create `api/create-checkout.js` as a Vercel serverless function using the Stripe SDK. Add `STRIPE_SECRET_KEY` to Vercel's environment variables — never prefix it with `VITE_`.
 
 ### Add third-party embeds
 
-Many sites need embeds from external tools. These are paste-and-done — no npm install, no JS to write.
-
-**How to handle them:**
-- Copy the embed code from the third-party tool
-- Paste it into `index.html` at the right location inside `<main id="app" class="app">`
-- Style the container in `src/style.css` if needed (width, aspect ratio, etc.)
-
-**Common embeds:**
-
-| Tool | Where to get the embed code |
-|------|-----------------------------|
-| YouTube / Vimeo | Share → Embed |
-| Google Maps | Share → Embed a map |
-| Calendly | Integrations → Embed |
-| Typeform | Share → Embed |
-| Spotify | Share → Embed track/playlist |
-| Airtable | Share → Embed this view |
-| Loom | Share → Embed |
-
-For embeds that load a `<script>` tag asynchronously (Calendly, HubSpot forms, etc.), place the `<script>` tag just before `</body>` in `index.html` to avoid blocking page render.
+Copy the embed code from the tool (YouTube, Calendly, Typeform, etc.) and paste into `index.html`. No npm install needed.
 
 ### Disable password protection
 1. Remove `initAuth()` from `src/main.js`
@@ -510,11 +366,11 @@ For embeds that load a `<script>` tag asynchronously (Calendly, HubSpot forms, e
 
 | File | What it does |
 |------|-------------|
-| `index.html` | The only HTML page. Contains the password gate overlay and the main content area. |
+| `index.html` | Landing page when deployed. Replaced with app scaffold on first use. |
 | `src/style.css` | All CSS. The `:root` block at the top is the design control panel. |
 | `src/main.js` | Entry point. Calls `initAuth()`, then app logic goes here. |
 | `src/auth.js` | Gate logic: checks sessionStorage → shows form → calls API → hides gate on success. |
-| `src/supabase.js` | Creates and exports the configured Supabase client. |
+| `src/supabase.js` | Creates and exports the configured Supabase client. Auth examples included. |
 | `api/check-password.js` | Vercel serverless function. Validates the password server-side. |
 | `public/favicon.svg` | Placeholder favicon. Replace with any SVG. |
 | `public/fonts/` | Place custom font files (`.woff2`) here. Served as static assets. |
@@ -524,8 +380,8 @@ For embeds that load a `<script>` tag asynchronously (Calendly, HubSpot forms, e
 | `.env.example` | Documents required environment variables. |
 | `.env` | Local secrets (gitignored). Copy from `.env.example`. |
 | `.gitignore` | Excludes `.env`, `node_modules/`, `dist/`. |
-| `CLAUDE.md` | Project context for Claude Code users (this file). |
-| `.cursorrules` | Project context for Cursor users — mirrors this file. |
+| `CLAUDE.md` | Project context for Claude Code users. |
+| `.cursorrules` | Project context for Cursor users (this file). |
 
 ---
 
@@ -553,8 +409,6 @@ import { supabase } from './supabase.js'
 const { data, error } = await supabase.from('my_table').select('*')
 ```
 
-The anon key is safe to expose in the browser — Supabase uses Row Level Security policies to control data access. If Supabase isn't being used, this file can be ignored entirely.
-
 ---
 
 ## Environment variables
@@ -575,5 +429,5 @@ The anon key is safe to expose in the browser — Supabase uses Row Level Securi
 - Don't install new dependencies without asking
 - Keep all styles in `src/style.css`
 - `SITE_PASSWORD` must never have a `VITE_` prefix
-- Never ask the user to run a terminal command — use your Bash tool instead
+- Never ask the user to run a terminal command — run it yourself
 - Never ask the user to manually edit a file — edit it for them
