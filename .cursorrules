@@ -1127,6 +1127,50 @@ const { data, error } = await supabase.from('my_table').select('*')
 
 ---
 
+## Before you ship — accessibility and performance checks
+
+Run these before considering any feature done. Fix issues found rather than noting them.
+
+### Accessibility
+
+**Semantic structure:** One `<h1>` per page, heading hierarchy never skipped, landmark elements used (`<header>`, `<main>`, `<footer>`, `<nav>`).
+
+**Images:** Every `<img>` has `alt` — descriptive for content, `alt=""` for decorative.
+
+**Interactive elements:**
+- Every button/link has an accessible name (visible text, `aria-label`, or `aria-labelledby`)
+- Icon-only buttons always have `aria-label`
+- No `<a href="#">` used as buttons — use `<button>` instead
+- No `tabindex` values greater than 0
+
+**Keyboard navigation:** All interactive elements reachable by Tab. Focus is always visible — never remove `outline` without a replacement. Modals trap focus while open, return it to the trigger on close.
+
+**Forms:** Every input has an associated `<label>` (via `for`/`id` or `aria-label`). Error messages linked via `aria-describedby`. Required fields use the `required` attribute.
+
+**Color:** Contrast ratio ≥ 4.5:1 for normal text, ≥ 3:1 for large text and UI components. Information never conveyed by color alone.
+
+**Motion:** All JS animations check `prefers-reduced-motion` and skip or instant-complete if set. Add to `src/style.css`:
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+```
+
+### Performance
+
+**Images:** All `<img>` have explicit `width` and `height` to prevent layout shift. Below-fold images use `loading="lazy"`. Don't serve oversized images.
+
+**Animation:** Only animate `transform` and `opacity` — never `width`, `height`, `top`, `left` (triggers reflow). Use `will-change: transform` sparingly, remove after animation. Cap canvas/WebGL pixel ratio at 2: `Math.min(window.devicePixelRatio, 2)`. Cancel RAF loops when elements are removed. Pause RAF when page is hidden:
+```js
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause() })
+```
+
+**DOM:** Never interleave DOM reads and writes in a loop — batch reads first, then writes. Use `ResizeObserver` instead of `window.resize` polling. Use `{ passive: true }` on scroll and mousemove listeners.
+
+**Loading:** Third-party embed `<script>` tags go just before `</body>`. Fonts use `font-display: swap`. Don't render large datasets (500+ items) to the DOM at once — paginate or virtualize.
+
+---
+
 ## Constraints
 
 - Keep it vanilla JS unless the user explicitly asks for a framework
