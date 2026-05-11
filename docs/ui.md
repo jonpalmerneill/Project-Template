@@ -714,3 +714,348 @@ createIcons({ icons }) // auto-replaces <i data-lucide="name"> elements
 Create a new `.html` file in the project root. Vite builds it automatically. Add a `<link>` in `index.html` to navigate to it. Each page needs its own `<script type="module">` tag pointing to a JS entry file.
 
 For page-to-page transitions, see `docs/animation.md` → Page transitions.
+
+---
+
+## Shared layout across pages (nav, footer)
+
+Vite builds each `.html` file independently — there is no layout component system built in. The right approach depends on how many pages there are.
+
+**2–3 pages:** Copy and paste the `<header>` and `<footer>` HTML into each page. Simple and transparent.
+
+**4+ pages:** Use a JS HTML-include pattern to avoid maintaining duplicate markup.
+
+1. Create `src/layout.js`:
+   ```js
+   const nav = `
+     <header class="site-header">
+       <a href="/">Home</a>
+       <a href="/about.html">About</a>
+       <a href="/work.html">Work</a>
+     </header>
+   `
+
+   const footer = `
+     <footer class="site-footer">
+       <p>© 2025 Your Name</p>
+     </footer>
+   `
+
+   export function injectLayout() {
+     document.body.insertAdjacentHTML('afterbegin', nav)
+     document.body.insertAdjacentHTML('beforeend', footer)
+   }
+   ```
+
+2. Call from every page's JS entry file:
+   ```js
+   import { injectLayout } from './layout.js'
+   injectLayout()
+   ```
+
+3. Each `.html` file's `<body>` just needs `<main>` content — the nav and footer are injected.
+
+**Notes:**
+- Highlight the current nav link with a class: `if (link.href === location.href) link.classList.add('active')`
+- If page count grows beyond 5–6 and the JS-include pattern feels like a workaround, it is. That's the ceiling for this approach — the honest next step is SvelteKit, which has a real layout system.
+
+---
+
+## File uploads
+
+Upload a file to Supabase Storage — the simplest hosted storage option for this stack.
+
+**You do:**
+
+1. Create a storage bucket in the Supabase dashboard → Storage → New bucket. Set it to public if files should be readable without auth.
+
+2. Add RLS policies in the SQL editor:
+   ```sql
+   -- Allow anyone to upload (adjust for auth if needed)
+   CREATE POLICY "Public upload"
+   ON storage.objects FOR INSERT
+   WITH CHECK (bucket_id = 'uploads');
+
+   -- Allow anyone to read
+   CREATE POLICY "Public read"
+   ON storage.objects FOR SELECT
+   USING (bucket_id = 'uploads');
+   ```
+
+3. Add the upload UI to `index.html`:
+   ```html
+   <input type="file" id="file-input" accept="image/*" />
+   <div id="upload-preview"></div>
+   <button id="upload-btn">Upload</button>
+   <p id="upload-status"></p>
+   ```
+
+4. Add upload logic:
+   ```js
+   import { supabase } from './supabase.js'
+
+   const input   = document.getElementById('file-input')
+   const btn     = document.getElementById('upload-btn')
+   const preview = document.getElementById('upload-preview')
+   const status  = document.getElementById('upload-status')
+
+   // Show image preview before uploading
+   input.addEventListener('change', () => {
+     const file = input.files[0]
+     if (!file || !file.type.startsWith('image/')) return
+     const url = URL.createObjectURL(file)
+     preview.innerHTML = `<img src="${url}" style="max-width:200px" />`
+   })
+
+   btn.addEventListener('click', async () => {
+     const file = input.files[0]
+     if (!file) return
+
+     const filename = `${Date.now()}-${file.name}`
+     const { data, error } = await supabase.storage
+       .from('uploads')
+       .upload(filename, file)
+
+     if (error) {
+       status.textContent = 'Upload failed: ' + error.message
+     } else {
+       const { data: { publicUrl } } = supabase.storage
+         .from('uploads')
+         .getPublicUrl(filename)
+       status.textContent = 'Uploaded: ' + publicUrl
+     }
+   })
+   ```
+
+**Drag-to-upload zone:**
+```js
+const dropzone = document.getElementById('dropzone')
+
+dropzone.addEventListener('dragover', e => {
+  e.preventDefault()
+  dropzone.classList.add('dragover')
+})
+
+dropzone.addEventListener('dragleave', () => {
+  dropzone.classList.remove('dragover')
+})
+
+dropzone.addEventListener('drop', e => {
+  e.preventDefault()
+  dropzone.classList.remove('dragover')
+  const file = e.dataTransfer.files[0]
+  if (file) handleUpload(file) // your upload function
+})
+```
+
+**Notes:**
+- Supabase Storage free tier: 1 GB storage, 2 GB bandwidth
+- For non-image files, remove the `accept` attribute and adjust the preview logic
+- File size limit: 50 MB per file by default — configurable in the Supabase dashboard
+
+---
+
+## Video
+
+**Background video loop (muted autoplay):**
+```html
+<video
+  autoplay
+  muted
+  loop
+  playsinline
+  class="bg-video"
+  aria-hidden="true"
+>
+  <source src="/video/background.mp4" type="video/mp4" />
+</video>
+```
+
+```css
+.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+}
+```
+
+**Standard player (with browser controls):**
+```html
+<video controls preload="metadata" width="800">
+  <source src="/video/demo.mp4" type="video/mp4" />
+  <track kind="captions" src="/video/demo.vtt" srclang="en" label="English" />
+  Your browser does not support video.
+</video>
+```
+
+**Where to host video files:**
+
+Vercel is not a video CDN — large video files served from Vercel will be slow and expensive. Use one of:
+
+| Option | Best for |
+|--------|----------|
+| Supabase Storage | Small clips under 50 MB, same stack |
+| Cloudflare R2 | Large files, good free tier |
+| Mux | Streaming, adaptive bitrate, analytics |
+| Vimeo / YouTube embed | Anything public-facing |
+
+For Vimeo/YouTube, use the embed approach from "Third-party embeds" — no file hosting needed.
+
+**Notes:**
+- Always include `playsinline` on mobile — without it, iOS opens the video full-screen
+- `preload="metadata"` fetches just the duration and thumbnail, not the whole file
+- Add captions (`<track kind="captions">`) for accessibility — generate `.vtt` files with [Whisper](https://openai.com/research/whisper) or similar
+- Do not autoplay with sound — browsers block it. `muted` is required for `autoplay` to work
+
+---
+
+## Client-side search
+
+For searching a list of items already on the page, Fuse.js provides fuzzy search with no backend required.
+
+**Install:**
+```
+npm install fuse.js
+```
+
+**Basic usage:**
+```js
+import Fuse from 'fuse.js'
+
+const items = [
+  { title: 'Apple', category: 'fruit' },
+  { title: 'Banana', category: 'fruit' },
+  { title: 'Broccoli', category: 'vegetable' },
+]
+
+const fuse = new Fuse(items, {
+  keys: ['title', 'category'], // fields to search
+  threshold: 0.3,              // 0 = exact, 1 = match anything
+})
+
+const input = document.getElementById('search-input')
+const list  = document.getElementById('results')
+
+function render(results) {
+  list.innerHTML = results
+    .map(r => `<li>${r.item.title}</li>`)
+    .join('')
+}
+
+render(items.map(item => ({ item }))) // show all on load
+
+input.addEventListener('input', () => {
+  const q = input.value.trim()
+  render(q ? fuse.search(q) : items.map(item => ({ item })))
+})
+```
+
+**Search content from Supabase (server-side full-text):**
+```js
+// PostgreSQL full-text search — better for large datasets
+const { data } = await supabase
+  .from('posts')
+  .select('*')
+  .textSearch('title', query, { type: 'websearch' })
+```
+
+**When to use which:**
+- Fuse.js: up to a few hundred items, already loaded in the browser, fuzzy matching
+- Supabase `textSearch`: large datasets, data lives in the database, exact and phrase matching
+
+---
+
+## Drag and drop
+
+**Sortable list (native HTML5, no library):**
+
+```html
+<ul id="sortable" class="sortable-list">
+  <li draggable="true" data-id="1">Item one</li>
+  <li draggable="true" data-id="2">Item two</li>
+  <li draggable="true" data-id="3">Item three</li>
+</ul>
+```
+
+```js
+const list = document.getElementById('sortable')
+let dragging = null
+
+list.addEventListener('dragstart', e => {
+  dragging = e.target
+  e.target.classList.add('is-dragging')
+})
+
+list.addEventListener('dragend', e => {
+  e.target.classList.remove('is-dragging')
+  dragging = null
+})
+
+list.addEventListener('dragover', e => {
+  e.preventDefault()
+  const target = e.target.closest('[draggable]')
+  if (!target || target === dragging) return
+  const rect = target.getBoundingClientRect()
+  const after = e.clientY > rect.top + rect.height / 2
+  list.insertBefore(dragging, after ? target.nextSibling : target)
+})
+```
+
+```css
+.sortable-list li { cursor: grab; }
+.sortable-list li.is-dragging { opacity: 0.4; }
+```
+
+**Read the final order:**
+```js
+const order = [...list.querySelectorAll('[data-id]')].map(el => el.dataset.id)
+```
+
+**Notes:**
+- For complex sortable UIs (grid layouts, cross-list sorting), use the [SortableJS](https://sortablejs.com) library (`npm install sortablejs`)
+- Touch devices do not support HTML5 drag-and-drop — use SortableJS if touch support is needed
+
+---
+
+## Image optimization
+
+Large unoptimized images are the most common cause of slow page loads. Run these steps before deploying.
+
+**Convert to WebP (one-time, in the terminal):**
+```
+npx @squoosh/cli --webp '{}' public/images/*.jpg
+```
+Replaces each `.jpg` with a `.webp` at dramatically smaller file size. Update `src` attributes to point to `.webp` files afterward.
+
+**Responsive images with `srcset` (serve the right size for each screen):**
+```html
+<img
+  src="/images/hero-800.webp"
+  srcset="/images/hero-400.webp 400w, /images/hero-800.webp 800w, /images/hero-1600.webp 1600w"
+  sizes="(max-width: 600px) 400px, (max-width: 1200px) 800px, 1600px"
+  alt="Hero image"
+  width="1600"
+  height="900"
+  loading="lazy"
+  decoding="async"
+/>
+```
+
+**Always include `width` and `height`** — without them the browser can't reserve space before the image loads, causing layout shift (CLS).
+
+**Use `loading="lazy"` for everything below the fold.** The hero image (visible immediately) should use `loading="eager"` (the default) so it's not delayed.
+
+**Vite asset pipeline:**
+- Images in `src/` are hashed and bundled: `import heroUrl from './images/hero.webp'`
+- Images in `public/` are copied as-is: reference as `/images/hero.webp`
+- For images that need to be referenced in HTML, `public/` is simpler
+
+**Checklist:**
+- [ ] All images converted to WebP or AVIF
+- [ ] `width` and `height` set on every `<img>`
+- [ ] `loading="lazy"` on all below-the-fold images
+- [ ] No image wider than its display container (don't serve 3000px for a 400px slot)
+- [ ] Hero/LCP image not lazy-loaded

@@ -250,3 +250,258 @@ Progressive Web Apps can be installed to the home screen on iOS and Android from
 - `registerType: 'autoUpdate'` silently updates the cached app on next visit after a new deploy
 - Offline support is automatic once the service worker is active
 - iOS generates a splash screen automatically from the icon and `background_color`
+
+---
+
+## Geolocation
+
+The browser Geolocation API returns the device's lat/lng. Works on desktop and mobile — always shows a permission prompt first.
+
+**Get position once:**
+```js
+navigator.geolocation.getCurrentPosition(
+  (pos) => {
+    const { latitude, longitude, accuracy } = pos.coords
+    console.log(`${latitude}, ${longitude} (±${accuracy}m)`)
+  },
+  (err) => {
+    console.error('Geolocation denied or unavailable:', err.message)
+  },
+  { enableHighAccuracy: true, timeout: 10000 }
+)
+```
+
+**Watch position (live tracking):**
+```js
+const watchId = navigator.geolocation.watchPosition(
+  (pos) => {
+    const { latitude, longitude } = pos.coords
+    // update map marker, log trail, etc.
+  },
+  (err) => console.error(err)
+)
+
+// Stop tracking when done
+navigator.geolocation.clearWatch(watchId)
+```
+
+**Center a Leaflet or Mapbox map on the user:**
+```js
+navigator.geolocation.getCurrentPosition(({ coords }) => {
+  map.setView([coords.latitude, coords.longitude], 14) // Leaflet
+  // map.flyTo({ center: [coords.longitude, coords.latitude], zoom: 14 }) // Mapbox
+})
+```
+
+**Notes:**
+- Geolocation only works on HTTPS — it will silently fail on `http://`
+- Always handle the error callback — the user may deny permission or be on a desktop with no GPS
+- `enableHighAccuracy: true` uses GPS on mobile (more accurate, more battery)
+- On desktop, position is estimated from Wi-Fi/IP — accuracy can be off by kilometers
+
+---
+
+## Camera and microphone
+
+Access the device's camera or microphone using `getUserMedia`. Works in any modern browser, requires HTTPS, and always shows a browser permission prompt.
+
+**Camera preview:**
+```html
+<video id="camera-preview" autoplay playsinline muted></video>
+<button id="take-photo">Take photo</button>
+<canvas id="snapshot" hidden></canvas>
+<img id="photo-output" alt="Captured photo" />
+```
+
+```js
+const video    = document.getElementById('camera-preview')
+const canvas   = document.getElementById('snapshot')
+const output   = document.getElementById('photo-output')
+const photoBtn = document.getElementById('take-photo')
+
+// Start camera
+const stream = await navigator.mediaDevices.getUserMedia({
+  video: { facingMode: 'environment' }, // 'user' = front camera
+  audio: false,
+})
+video.srcObject = stream
+
+// Take a photo
+photoBtn.addEventListener('click', () => {
+  canvas.width  = video.videoWidth
+  canvas.height = video.videoHeight
+  canvas.getContext('2d').drawImage(video, 0, 0)
+  output.src = canvas.toDataURL('image/jpeg')
+  output.hidden = false
+})
+
+// Stop the camera when done
+function stopCamera() {
+  stream.getTracks().forEach(t => t.stop())
+}
+```
+
+**Microphone input level meter:**
+```js
+const stream  = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+const ctx     = new AudioContext()
+const source  = ctx.createMediaStreamSource(stream)
+const analyser = ctx.createAnalyser()
+analyser.fftSize = 256
+source.connect(analyser)
+
+const data = new Uint8Array(analyser.frequencyBinCount)
+const meter = document.getElementById('level-bar')
+
+function tick() {
+  analyser.getByteFrequencyData(data)
+  const avg = data.reduce((a, b) => a + b, 0) / data.length
+  meter.style.width = `${(avg / 255) * 100}%`
+  requestAnimationFrame(tick)
+}
+tick()
+```
+
+**Switch between front and rear camera:**
+```js
+let facingMode = 'environment'
+
+async function switchCamera() {
+  stream.getTracks().forEach(t => t.stop())
+  facingMode = facingMode === 'environment' ? 'user' : 'environment'
+  const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } })
+  video.srcObject = newStream
+}
+```
+
+**Notes:**
+- Always call `stream.getTracks().forEach(t => t.stop())` when the camera is no longer needed — this turns off the browser's recording indicator
+- `getUserMedia` throws if the user denies permission — always wrap in `try/catch`
+- On iOS, camera access requires Safari or a PWA installed to the home screen — it does not work in in-app browsers (Instagram, Gmail)
+- For QR code scanning, use a library like [html5-qrcode](https://github.com/mebjas/html5-qrcode) on top of this camera stream
+
+---
+
+## Push notifications
+
+Web Push lets a site send notifications to users even when the browser is closed. It requires a service worker, VAPID keys, and user permission.
+
+> **Complexity note:** Web Push is the most involved feature in this template. The setup takes 30–60 minutes and involves VAPID keys, a service worker, a Vercel serverless function, and a Supabase table for subscriptions. Only add it if the user specifically needs background notifications. For in-page alerts while the user is on the site, use a toast/notification UI element instead.
+
+**Architecture:**
+1. Browser asks for notification permission → receives a push subscription object
+2. Subscription is saved to Supabase
+3. A Vercel serverless function reads subscriptions from Supabase and sends push messages using the Web Push protocol
+4. The service worker receives push events and displays the notification
+
+**You do:**
+
+1. Generate VAPID keys (one time, run in the terminal):
+   ```
+   npx web-push generate-vapid-keys
+   ```
+   Copy the public and private keys.
+
+2. Add to `.env` and Vercel environment variables:
+   ```
+   VITE_VAPID_PUBLIC_KEY=your_public_key
+   VAPID_PRIVATE_KEY=your_private_key
+   VAPID_EMAIL=mailto:you@example.com
+   ```
+
+3. Create `public/sw.js` (the service worker — must be in `public/`, not `src/`):
+   ```js
+   self.addEventListener('push', (event) => {
+     const data = event.data?.json() ?? { title: 'Notification', body: '' }
+     event.waitUntil(
+       self.registration.showNotification(data.title, {
+         body: data.body,
+         icon: '/icon-192.png',
+       })
+     )
+   })
+   ```
+
+4. Register the service worker and subscribe in `src/push.js`:
+   ```js
+   import { supabase } from './supabase.js'
+
+   export async function initPush() {
+     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+
+     const reg = await navigator.serviceWorker.register('/sw.js')
+     const permission = await Notification.requestPermission()
+     if (permission !== 'granted') return
+
+     const sub = await reg.pushManager.subscribe({
+       userVisibleOnly: true,
+       applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY,
+     })
+
+     // Save subscription to Supabase
+     await supabase.from('push_subscriptions').upsert([{
+       endpoint: sub.endpoint,
+       subscription: JSON.stringify(sub),
+     }])
+   }
+   ```
+
+5. Create `api/send-push.js` (Vercel serverless function that triggers notifications):
+   ```js
+   import webpush from 'web-push'
+   import { createClient } from '@supabase/supabase-js'
+
+   webpush.setVapidDetails(
+     process.env.VAPID_EMAIL,
+     process.env.VITE_VAPID_PUBLIC_KEY,
+     process.env.VAPID_PRIVATE_KEY
+   )
+
+   const supabase = createClient(
+     process.env.VITE_SUPABASE_URL,
+     process.env.SUPABASE_SERVICE_KEY // service role key, not anon
+   )
+
+   export default async function handler(req, res) {
+     const { title, body } = req.body
+
+     const { data: subs } = await supabase.from('push_subscriptions').select('subscription')
+
+     await Promise.allSettled(
+       subs.map(({ subscription }) =>
+         webpush.sendNotification(JSON.parse(subscription), JSON.stringify({ title, body }))
+       )
+     )
+
+     res.json({ sent: subs.length })
+   }
+   ```
+
+6. Run `npm install web-push`
+
+7. Create the `push_subscriptions` table in Supabase:
+   ```sql
+   create table push_subscriptions (
+     endpoint text primary key,
+     subscription text not null,
+     created_at timestamptz default now()
+   );
+
+   -- Public insert so any visitor can subscribe
+   create policy "Public insert" on push_subscriptions
+   for insert with check (true);
+   ```
+
+8. Trigger a notification (from your own code, a cron job, or another serverless function):
+   ```js
+   await fetch('/api/send-push', {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({ title: 'Hello', body: 'This is a push notification' }),
+   })
+   ```
+
+**Notes:**
+- iOS requires the app to be installed as a PWA (home screen) before push notifications work — in-browser push on iOS is not supported
+- The `SUPABASE_SERVICE_KEY` (service role key) bypasses RLS — only use it server-side, never in browser code
+- Stale subscriptions (uninstalled browsers) will return 410 errors — filter them out and delete from the table in production
