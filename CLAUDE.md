@@ -248,6 +248,118 @@ Edit the `:root` block at the top of `src/style.css`. Every variable has a comme
 2. Add an `@font-face` block in `src/style.css` (there's a commented-out example already there)
 3. Update `--font-body` or `--font-heading` in `:root`
 
+### Add a page loader
+
+A full-screen overlay that animates a progress bar and counter from 0 → 100, then fades out to reveal the site. Progress fills quickly to ~80% on its own, waits for the page to fully load, then completes.
+
+**You do:**
+
+1. Add the loader HTML to `index.html`, immediately after `<body>` and before everything else:
+   ```html
+   <div id="loader" class="loader" aria-hidden="true">
+     <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
+     <span class="loader-count" id="loader-count">0</span>
+   </div>
+   ```
+
+2. Create `src/loader.js`:
+   ```js
+   export function initLoader() {
+     const loader = document.getElementById('loader')
+     const fill   = document.getElementById('loader-fill')
+     const count  = document.getElementById('loader-count')
+
+     // Skip animation for users who prefer reduced motion
+     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+       loader.remove()
+       return Promise.resolve()
+     }
+
+     return new Promise((resolve) => {
+       let progress = 0
+       let loaded = document.readyState === 'complete'
+
+       window.addEventListener('load', () => { loaded = true }, { once: true })
+
+       const tick = setInterval(() => {
+         // Ease toward 82% until page loads, then ease toward 100%
+         const target = loaded ? 100 : 82
+         progress += (target - progress) * 0.08
+
+         fill.style.transform = `scaleX(${progress / 100})`
+         count.textContent = Math.floor(progress)
+
+         if (progress >= 99.9) {
+           clearInterval(tick)
+           fill.style.transform = 'scaleX(1)'
+           count.textContent = '100'
+
+           setTimeout(() => {
+             loader.classList.add('loader--done')
+             loader.addEventListener('transitionend', () => {
+               loader.remove()
+               resolve()
+             }, { once: true })
+           }, 200) // brief pause at 100 before fading out
+         }
+       }, 16) // ~60fps
+     })
+   }
+   ```
+
+3. Call it at the top of `src/main.js`, before any other init:
+   ```js
+   import { initLoader } from './loader.js'
+   await initLoader()
+   // rest of app init below
+   ```
+
+4. Add to `src/style.css`:
+   ```css
+   .loader {
+     position: fixed;
+     inset: 0;
+     z-index: 9999;
+     background: var(--color-bg);
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     gap: 1rem;
+     transition: opacity 0.5s ease, visibility 0.5s ease;
+   }
+   .loader--done { opacity: 0; visibility: hidden; pointer-events: none; }
+
+   .loader-bar {
+     width: min(280px, 80vw);
+     height: 1px;
+     background: color-mix(in srgb, var(--color-text) 20%, transparent);
+     overflow: hidden;
+   }
+   .loader-fill {
+     height: 100%;
+     background: var(--color-text);
+     transform: scaleX(0);
+     transform-origin: left;
+     transition: transform 0.1s linear;
+   }
+
+   .loader-count {
+     font-size: 0.75rem;
+     font-family: var(--font-body);
+     color: var(--color-text);
+     opacity: 0.5;
+     min-width: 3ch;
+     text-align: center;
+   }
+   ```
+
+**Variations — ask the user which style they want:**
+- Bar only: omit `.loader-count` span and its CSS
+- Counter only: omit `.loader-bar` div and its CSS
+- Branded: add a logo `<img>` or inline SVG inside `.loader` above the bar
+- Faster fill: increase the `0.08` easing factor (e.g. `0.15` fills quicker)
+
 ### Add animations
 
 The `motion` package is already installed. Import what you need:
