@@ -107,10 +107,11 @@
       .section-label::after {
         content: '›';
         display: inline-block;
+        transform: rotate(90deg);
         transition: transform 0.15s ease;
       }
       details[open] > .section-label::after {
-        transform: rotate(90deg);
+        transform: rotate(270deg);
       }
 
       details > *:not(summary) {
