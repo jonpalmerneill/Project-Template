@@ -366,17 +366,35 @@ await supabase.from('items').delete().eq('id', 123)
 ```
 
 **Creating a table:**
-Guide the user to the Supabase dashboard → Table Editor → New Table. After creating the table, help them set up Row Level Security (RLS) policies so data access is properly controlled.
+Guide the user to the Supabase dashboard → Table Editor → New Table.
 
-**RLS example policy (SQL editor):**
+> **RLS warning:** New Supabase tables have Row Level Security disabled by default. A table without RLS is readable and writable by anyone who has the anon key — which is anyone who visits the site. Always enable RLS before any real data goes in.
+
+After creating the table, immediately:
+1. Enable RLS: Table Editor → the table → RLS disabled toggle → Enable RLS
+2. Add at least one policy in the SQL editor, or no queries will return data
+
+**RLS example policies (SQL editor):**
 ```sql
--- Allow anyone to read published posts
-CREATE POLICY "Public can read published posts"
-ON posts FOR SELECT
-USING (status = 'published');
+-- Allow anyone to read all rows (open read, no auth required)
+CREATE POLICY "Public read"
+ON my_table FOR SELECT
+USING (true);
 
--- Allow authenticated users to insert their own rows
-CREATE POLICY "Users can insert their own rows"
-ON posts FOR INSERT
+-- Allow anyone to insert (e.g. a contact form or survey response)
+CREATE POLICY "Public insert"
+ON my_table FOR INSERT
+WITH CHECK (true);
+
+-- Allow only the row's owner to read their own rows (requires auth)
+CREATE POLICY "Users read own rows"
+ON my_table FOR SELECT
+USING (auth.uid() = user_id);
+
+-- Allow only the row's owner to insert
+CREATE POLICY "Users insert own rows"
+ON my_table FOR INSERT
 WITH CHECK (auth.uid() = user_id);
 ```
+
+If the table is purely internal (never queried from the browser), RLS can stay off — but tell the user this explicitly so they understand the tradeoff.

@@ -79,6 +79,8 @@ MQTT is the standard protocol for IoT devices. Any MQTT-capable hardware — Ard
 
 Use this for: prototypes involving actual physical devices, smart home interfaces, sensor dashboards, hardware remote controls.
 
+> **Public broker warning:** The default broker (`broker.hivemq.com`) is completely public. Anyone in the world can subscribe to any topic — there is no access control. Never send passwords, personal data, API keys, or anything sensitive over it. Use a unique, hard-to-guess topic prefix per project (e.g. `my-project-x7k2` not `my-project`). For a private broker, sign up for HiveMQ Cloud free tier and add credentials as env vars (see Notes below).
+
 **You do:**
 
 1. Run `npm install mqtt`
