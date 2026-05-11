@@ -31,11 +31,25 @@ Give your project a name, set it to **Private**, and click **Create repository**
 
 **Terminal:** `git clone https://github.com/your-username/your-repo-name.git`
 
-### Step 3 — Open in Claude Code
+### Step 3 — Open in your AI editor
 
-Open the project folder in Claude Code and start talking.
+**Claude Code** (recommended — reads this project's setup automatically)
 
-Claude will handle everything from here — installing dependencies, starting the preview server, setting up Vercel, connecting Supabase, and making whatever changes you ask for.
+1. Install Claude Code: [claude.ai/code](https://claude.ai/code)
+2. Open GitHub Desktop → click **Repository → Open in Terminal**
+3. Type `claude` and press Enter
+
+That's the one terminal command you'll need. From here, Claude handles everything — just talk to it.
+
+> Using VS Code? Install the [Claude Code extension](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) and open the terminal from within VS Code instead.
+
+**Cursor** (alternative — good if you prefer a visual editor)
+
+1. Install Cursor: [cursor.com](https://cursor.com)
+2. Open Cursor → **File → Open Folder** → select your project folder
+3. Use the chat panel to start building
+
+> Cursor doesn't read `CLAUDE.md` automatically. For best results, open `CLAUDE.md` and paste its contents into your first chat message as context.
 
 ---
 
