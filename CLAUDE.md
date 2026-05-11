@@ -1824,6 +1824,174 @@ export async function initSurvey(surveyId, containerId = 'survey') {
 
 ---
 
+### Add an audio player
+
+A custom-styled HTML5 audio player with play/pause, a scrubbing timeline, and current/duration display. No library needed.
+
+**You do:**
+
+1. Add to `index.html`:
+   ```html
+   <div class="audio-player" data-src="/audio/track.mp3">
+     <button class="player-btn" id="play-btn" aria-label="Play">
+       <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+       <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+     </button>
+     <div class="player-meta">
+       <span class="player-title">Track Title</span>
+       <div class="player-timeline">
+         <div class="player-progress">
+           <div class="player-fill" id="player-fill"></div>
+         </div>
+         <span class="player-time" id="player-time">0:00 / 0:00</span>
+       </div>
+     </div>
+   </div>
+   ```
+   Place audio files in `public/audio/`. For multiple tracks, repeat the `.audio-player` block with different `data-src` and titles.
+
+2. Create `src/player.js`:
+   ```js
+   export function initPlayers() {
+     document.querySelectorAll('.audio-player').forEach(el => {
+       const src     = el.dataset.src
+       const btn     = el.querySelector('.player-btn')
+       const fill    = el.querySelector('.player-fill')
+       const time    = el.querySelector('.player-time')
+       const progress = el.querySelector('.player-progress')
+       const iconPlay  = el.querySelector('.icon-play')
+       const iconPause = el.querySelector('.icon-pause')
+
+       const audio = new Audio(src)
+
+       function fmt(s) {
+         const m = Math.floor(s / 60)
+         return `${m}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+       }
+
+       audio.addEventListener('timeupdate', () => {
+         const pct = audio.duration ? audio.currentTime / audio.duration : 0
+         fill.style.width = `${pct * 100}%`
+         time.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration || 0)}`
+       })
+
+       audio.addEventListener('ended', () => {
+         iconPlay.hidden  = false
+         iconPause.hidden = true
+         el.classList.remove('is-playing')
+       })
+
+       // Play/pause
+       btn.addEventListener('click', () => {
+         // Pause any other active players first
+         document.querySelectorAll('.audio-player.is-playing').forEach(other => {
+           if (other !== el) other.querySelector('.player-btn').click()
+         })
+         if (audio.paused) {
+           audio.play()
+           iconPlay.hidden  = true
+           iconPause.hidden = false
+           el.classList.add('is-playing')
+         } else {
+           audio.pause()
+           iconPlay.hidden  = false
+           iconPause.hidden = true
+           el.classList.remove('is-playing')
+         }
+       })
+
+       // Scrubbing
+       progress.addEventListener('click', e => {
+         const rect = progress.getBoundingClientRect()
+         audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration
+       })
+     })
+   }
+   ```
+
+3. Call from `src/main.js`:
+   ```js
+   import { initPlayers } from './player.js'
+   initPlayers()
+   ```
+
+4. Add to `src/style.css`:
+   ```css
+   .audio-player {
+     display: flex;
+     align-items: center;
+     gap: 1rem;
+     padding: 0.75rem 1rem;
+     border: 1px solid var(--color-border);
+     background: var(--color-surface);
+   }
+
+   .player-btn {
+     flex-shrink: 0;
+     width: 40px;
+     height: 40px;
+     border: none;
+     background: var(--color-primary);
+     color: #fff;
+     cursor: pointer;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+   }
+   .player-btn svg { width: 20px; height: 20px; }
+
+   .player-meta {
+     flex: 1;
+     min-width: 0;
+     display: flex;
+     flex-direction: column;
+     gap: 0.35rem;
+   }
+
+   .player-title {
+     font-size: 0.85rem;
+     white-space: nowrap;
+     overflow: hidden;
+     text-overflow: ellipsis;
+   }
+
+   .player-timeline {
+     display: flex;
+     align-items: center;
+     gap: 0.5rem;
+   }
+
+   .player-progress {
+     flex: 1;
+     height: 3px;
+     background: var(--color-border);
+     cursor: pointer;
+     position: relative;
+   }
+
+   .player-fill {
+     height: 100%;
+     width: 0%;
+     background: var(--color-primary);
+     pointer-events: none;
+   }
+
+   .player-time {
+     font-size: 0.75rem;
+     white-space: nowrap;
+     opacity: 0.6;
+   }
+   ```
+
+**Multiple tracks / playlist:**
+Repeat `.audio-player` blocks in the HTML. The player automatically pauses any currently playing track when another is started.
+
+**Autoplay note:** Browsers block autoplay with sound by default. Never call `audio.play()` without a user gesture (a click). The pattern above is always user-initiated.
+
+**Streaming audio:** Replace `data-src` with any publicly accessible audio URL (Spotify previews, SoundCloud direct links, etc.). For protected audio, serve files from Supabase Storage.
+
+---
+
 ### Add a contact form
 
 Two approaches — pick based on what the user needs:

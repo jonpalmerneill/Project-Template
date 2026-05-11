@@ -861,6 +861,67 @@ Question rendering: `text` → `<input>`, `radio` → radio buttons from `option
 
 ---
 
+### Add an audio player
+
+Custom-styled HTML5 audio with play/pause, scrubbing timeline, and time display. No library needed. Place audio files in `public/audio/`.
+
+1. Add to `index.html` (repeat for multiple tracks):
+   ```html
+   <div class="audio-player" data-src="/audio/track.mp3">
+     <button class="player-btn" aria-label="Play">
+       <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+       <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+     </button>
+     <div class="player-meta">
+       <span class="player-title">Track Title</span>
+       <div class="player-timeline">
+         <div class="player-progress"><div class="player-fill"></div></div>
+         <span class="player-time">0:00 / 0:00</span>
+       </div>
+     </div>
+   </div>
+   ```
+
+2. Create `src/player.js`:
+   ```js
+   export function initPlayers() {
+     document.querySelectorAll('.audio-player').forEach(el => {
+       const audio = new Audio(el.dataset.src)
+       const btn   = el.querySelector('.player-btn')
+       const fill  = el.querySelector('.player-fill')
+       const time  = el.querySelector('.player-time')
+       const bar   = el.querySelector('.player-progress')
+       const fmt   = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`
+
+       audio.addEventListener('timeupdate', () => {
+         fill.style.width = `${(audio.currentTime / (audio.duration || 1)) * 100}%`
+         time.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration || 0)}`
+       })
+       audio.addEventListener('ended', () => el.classList.remove('is-playing'))
+
+       btn.addEventListener('click', () => {
+         document.querySelectorAll('.audio-player.is-playing').forEach(o => { if (o !== el) o.querySelector('.player-btn').click() })
+         if (audio.paused) { audio.play(); el.classList.add('is-playing') }
+         else { audio.pause(); el.classList.remove('is-playing') }
+         el.querySelector('.icon-play').hidden  = !audio.paused
+         el.querySelector('.icon-pause').hidden = audio.paused
+       })
+
+       bar.addEventListener('click', e => {
+         audio.currentTime = ((e.clientX - bar.getBoundingClientRect().left) / bar.offsetWidth) * audio.duration
+       })
+     })
+   }
+   ```
+
+3. Call `initPlayers()` from `src/main.js`
+
+4. Style: `.audio-player` flex row with border, `.player-progress` clickable track bar, `.player-fill` width driven by `timeupdate`. Use `var(--color-primary)` for the fill and button.
+
+Multiple tracks pause each other automatically. Never autoplay — browsers block it without a user gesture. For streaming, replace `data-src` with any public audio URL. For protected files, serve from Supabase Storage.
+
+---
+
 ### Add a contact form
 
 Two approaches — pick based on what the user needs:
