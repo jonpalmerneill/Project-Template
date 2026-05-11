@@ -7,8 +7,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Project Template — Build websites by chatting with Claude</title>
-    <meta name="description" content="A minimal website starter. Customize and deploy it by chatting with Claude Code — no terminal commands needed." />
+    <title>Project Template — Build websites with AI</title>
+    <meta name="description" content="A minimal website starter. Customize and deploy it by chatting with AI — no terminal commands needed." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -27,20 +27,6 @@
         margin: 0 auto;
         padding: 0 1.5rem;
       }
-
-      /* ── Nav ── */
-      nav {
-        padding: 1.25rem 0;
-        border-bottom: 1px solid #e0e0e0;
-      }
-      nav .container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .nav-logo { font-weight: 600; }
-      .nav-link { font-size: 0.875rem; color: #6b7280; }
-      .nav-link:hover { color: #1a1a1a; }
 
       /* ── Hero ── */
       .hero {
@@ -143,8 +129,20 @@
         justify-content: center;
         margin-top: 0.1rem;
       }
-      .step-body strong { display: block; margin-bottom: 0.2rem; font-size: 0.95rem; }
-      .step-body span { font-size: 0.875rem; color: #6b7280; }
+      .step-body strong { display: block; margin-bottom: 0.35rem; font-size: 0.95rem; }
+      .step-body p { font-size: 0.875rem; color: #6b7280; line-height: 1.55; }
+      .step-body p + p { margin-top: 0.35rem; }
+      .step-body kbd {
+        display: inline-block;
+        padding: 0.1em 0.45em;
+        font-size: 0.8em;
+        font-family: inherit;
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        color: #374151;
+      }
 
       /* ── Prompts ── */
       .prompts { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -185,7 +183,7 @@
     <div class="container">
 
       <div class="hero">
-        <h1>Build a website by<br>talking to Claude.</h1>
+        <h1>Build a website by<br>talking to AI.</h1>
         <p class="tagline">A minimal starter with Vite, Supabase, and Vercel — pre-wired and ready to go. No terminal commands needed.</p>
         <div class="hero-actions">
           <a href="https://github.com/jonpalmerneill/Project-Template/generate" class="btn btn-primary">Use this template →</a>
@@ -229,29 +227,36 @@
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-body">
-              <strong>Use this template on GitHub</strong>
-              <span>Creates a fresh copy of this repo in your account — no fork history, no commit history.</span>
+              <strong>Copy this template on GitHub</strong>
+              <p>Click <kbd>Use this template</kbd> above, then <kbd>Create a new repository</kbd>. Give it a name and click <kbd>Create repository</kbd>. This makes a fresh copy in your GitHub account — no history carried over.</p>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-body">
-              <strong>Clone it to your computer</strong>
-              <span>Use GitHub Desktop — no terminal needed.</span>
+              <strong>Get the files onto your computer</strong>
+              <p>Install <a href="https://desktop.github.com" style="color:#3b5bdb">GitHub Desktop</a>. On your new repo page, click the green <kbd>Code</kbd> button, then <kbd>Open with GitHub Desktop</kbd>. Choose where to save it and click <kbd>Clone</kbd>.</p>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-body">
-              <strong>Open in Claude Code and start talking</strong>
-              <span>Claude installs dependencies, starts the server, deploys to Vercel, and makes whatever you ask for.</span>
+              <strong>Open the project in Cursor</strong>
+              <p>Install <a href="https://cursor.com" style="color:#3b5bdb">Cursor</a> — a free AI code editor. Open it, go to <kbd>File</kbd> → <kbd>Open Folder</kbd>, and select the folder you just cloned.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <strong>Open the AI and start building</strong>
+              <p>Press <kbd>⌘I</kbd> (Mac) or <kbd>Ctrl I</kbd> (Windows) to open Cursor's AI. Cursor reads the project automatically — just describe what you want and it handles the rest.</p>
             </div>
           </div>
         </div>
       </div>
 
       <div class="section">
-        <div class="section-label">What to ask Claude</div>
+        <div class="section-label">What to ask</div>
         <p class="section-intro">You don't need to know how any of this works. Just describe what you want.</p>
         <div class="prompts">
           <div class="prompt">Get this running so I can see it in my browser</div>
