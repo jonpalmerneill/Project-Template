@@ -41,7 +41,7 @@ When replacing the landing page on a fresh clone, write this to `index.html`:
   <body>
 
     <!-- Password gate overlay — hidden automatically after successful auth -->
-    <div id="gate" class="gate">
+    <div id="gate" class="gate" hidden>
       <div class="gate-box">
         <h2 class="gate-title">Enter password to continue</h2>
         <form id="gate-form" class="gate-form">
@@ -224,8 +224,8 @@ For features not covered below, read the relevant file before starting:
 | `docs/animation.md` | Page loader, Motion.dev, GSAP, SplitType, Lenis, page transitions, custom cursor, Swiper, text scramble, card tilt |
 | `docs/graphics.md` | Three.js, PixiJS, GLSL shaders, interactive dot field |
 | `docs/data.md` | Chart.js, Leaflet maps, Mapbox GL 3D, Airtable, external APIs, Supabase queries |
-| `docs/ui.md` | Dark/light mode, Alpine.js, audio player, contact form, surveys, Stripe, embeds, icons, adding pages |
-| `docs/device.md` | Supabase Realtime, MQTT, PWA |
+| `docs/ui.md` | Dark/light mode, Alpine.js, audio player, contact form, surveys, Stripe, embeds, icons, adding pages, shared layout, file uploads, video, search, drag and drop, image optimization |
+| `docs/device.md` | Supabase Realtime, MQTT, PWA, geolocation, camera/mic, push notifications |
 | `docs/checks.md` | Accessibility and performance checklist |
 
 ---

@@ -11,7 +11,7 @@ import { initAuth } from './auth.js'
 // On success (or if already authenticated), the gate hides and the app shows.
 // To disable password protection, remove this line and delete the gate
 // overlay in index.html.
-initAuth()
+await initAuth()
 
 // ─────────────────────────────────────────────
 // Your app logic goes here.
