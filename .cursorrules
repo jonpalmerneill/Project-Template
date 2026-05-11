@@ -1221,6 +1221,101 @@ Use this when the user wants custom email templates, to send from their own doma
 
 Copy the embed code from the tool (YouTube, Calendly, Typeform, etc.) and paste into `index.html`. No npm install needed.
 
+### Real-time messaging between devices (Supabase Realtime)
+
+Lets browsers, phones, and tablets send messages to each other and track which devices are connected. No new service — uses the Supabase already configured in the template.
+
+**Broadcast** (send messages to all connected clients on a channel):
+```js
+import { supabase } from './supabase.js'
+
+const channel = supabase.channel('prototype-room')
+
+channel.on('broadcast', { event: 'command' }, ({ payload }) => {
+  console.log('Received:', payload)
+})
+
+channel.subscribe()
+
+// Send to all other connected clients
+function send(action, value) {
+  channel.send({ type: 'broadcast', event: 'command', payload: { action, value } })
+}
+
+send('set-color', '#ff0000')
+send('navigate', '/screen-2')
+```
+
+**Presence** (see which devices are connected, with metadata):
+```js
+const channel = supabase.channel('prototype-room')
+
+channel.on('presence', { event: 'sync' }, () => {
+  const devices = Object.values(channel.presenceState()).flat()
+  console.log('Connected devices:', devices)
+})
+
+channel.on('presence', { event: 'join' }, ({ newPresences }) => console.log('Joined:', newPresences))
+channel.on('presence', { event: 'leave' }, ({ leftPresences }) => console.log('Left:', leftPresences))
+
+channel.subscribe(async (status) => {
+  if (status === 'SUBSCRIBED') {
+    await channel.track({ device: 'phone', user: 'Jon' })
+  }
+})
+```
+
+Use a unique channel name per project. Messages are ephemeral — use Supabase DB if you need a log. No RLS applies to broadcast/presence — fine for prototyping.
+
+---
+
+### Real-time messaging to physical hardware (MQTT)
+
+MQTT is the standard IoT protocol. Arduino, ESP32, Raspberry Pi, and smart home devices can pub/sub to the same topics as the browser. `mqtt.js` connects via WebSockets.
+
+1. Run `npm install mqtt`
+2. Create `src/mqtt.js`:
+   ```js
+   import mqtt from 'mqtt'
+
+   const BROKER = 'wss://broker.hivemq.com:8884/mqtt'
+   const TOPIC_PREFIX = 'my-prototype' // unique per project
+
+   let client
+
+   export function initMQTT({ onMessage } = {}) {
+     client = mqtt.connect(BROKER)
+     client.on('connect', () => {
+       client.subscribe(`${TOPIC_PREFIX}/#`)
+     })
+     client.on('message', (topic, message) => {
+       try { onMessage?.({ topic, payload: JSON.parse(message.toString()) }) }
+       catch { onMessage?.({ topic, payload: message.toString() }) }
+     })
+     return client
+   }
+
+   export function publish(subtopic, payload) {
+     client?.publish(`${TOPIC_PREFIX}/${subtopic}`, JSON.stringify(payload))
+   }
+   ```
+3. In `src/main.js`:
+   ```js
+   import { initMQTT, publish } from './mqtt.js'
+   initMQTT({ onMessage({ topic, payload }) { console.log(topic, payload) } })
+   publish('commands', { action: 'toggle', device: 'light-1' })
+   ```
+
+**Topic convention:** `my-prototype/commands` (browser→hardware), `my-prototype/sensor` (hardware→browser), `my-prototype/status`
+
+**Brokers:** `broker.hivemq.com` (free, public, no account), HiveMQ Cloud free tier (private, persistent), `test.mosquitto.org` (free, public)
+
+Public brokers are shared — use a unique topic prefix and don't send sensitive data. For private: add credentials as `VITE_MQTT_USER`/`VITE_MQTT_PASS` and pass to `mqtt.connect(BROKER, { username, password })`.
+
+Smartwatches: Apple Watch requires Swift/Xcode — no browser path. Simulate watch UI on a phone in a small viewport instead.
+
+---
+
 ### Make it installable on mobile (PWA)
 
 Adds install-to-home-screen on iOS and Android from a Vercel URL. Opens full-screen, no browser chrome, works offline. No app store needed.

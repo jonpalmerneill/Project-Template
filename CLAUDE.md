@@ -2453,6 +2453,184 @@ Many sites need embeds from external tools. These are paste-and-done — no npm 
 
 For embeds that load a `<script>` tag asynchronously (Calendly, HubSpot forms, etc.), place the `<script>` tag just before `</body>` in `index.html` to avoid blocking page render.
 
+### Real-time messaging between devices (Supabase Realtime)
+
+Supabase Realtime lets any number of connected clients — phones, tablets, laptops, browsers — send messages to each other instantly, and track which devices are currently connected. No new service needed: it's part of the Supabase project already configured in the template.
+
+Use this for: multi-device prototypes, shared remote controls, live dashboards, collaborative tools, IoT command interfaces where the "hardware" is another browser tab or phone.
+
+**Two features to know:**
+
+**Broadcast** — send a message to every client subscribed to the same channel:
+```js
+import { supabase } from './supabase.js'
+
+const channel = supabase.channel('prototype-room')
+
+// Listen for incoming messages
+channel.on('broadcast', { event: 'command' }, ({ payload }) => {
+  console.log('Received:', payload)
+  // payload is whatever object you sent
+})
+
+channel.subscribe()
+
+// Send a message — every other connected client receives it instantly
+function send(action, value) {
+  channel.send({
+    type: 'broadcast',
+    event: 'command',
+    payload: { action, value },
+  })
+}
+
+// Examples:
+send('set-color', '#ff0000')
+send('play', true)
+send('navigate', '/screen-2')
+```
+
+**Presence** — see which devices are currently connected, with metadata:
+```js
+const channel = supabase.channel('prototype-room')
+
+// React to changes in who's connected
+channel.on('presence', { event: 'sync' }, () => {
+  const state = channel.presenceState()
+  // state is an object keyed by presence_ref — each entry is a connected device
+  const devices = Object.values(state).flat()
+  console.log('Connected:', devices)
+})
+
+channel.on('presence', { event: 'join' }, ({ newPresences }) => {
+  console.log('Joined:', newPresences)
+})
+
+channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+  console.log('Left:', leftPresences)
+})
+
+// Subscribe and announce this device
+channel.subscribe(async (status) => {
+  if (status === 'SUBSCRIBED') {
+    await channel.track({
+      device: 'phone',
+      user: 'Jon',
+      joined_at: new Date().toISOString(),
+    })
+  }
+})
+```
+
+**Combining both** — a common pattern is to use presence to show which devices are connected and broadcast to send commands between them. Open the same URL on two devices and they can immediately communicate.
+
+**Notes:**
+- Channel names are arbitrary strings — use a unique name per prototype to avoid clashing with other projects on the same Supabase instance
+- Messages are ephemeral — they're not stored. Use `supabase.from('table').insert()` if you need a log
+- No Supabase RLS applies to Realtime broadcast/presence — any client with the anon key can join any channel. Fine for prototyping; add channel-level auth for production
+
+---
+
+### Real-time messaging to physical hardware (MQTT)
+
+MQTT is the standard protocol for IoT devices. Any MQTT-capable hardware — Arduino, ESP32, Raspberry Pi, smart home devices — can publish and subscribe to the same topics as the browser. `mqtt.js` connects from the browser via WebSockets.
+
+Use this for: prototypes that involve actual physical devices, smart home interfaces, sensor dashboards, hardware remote controls.
+
+**You do:**
+
+1. Run `npm install mqtt`
+
+2. Create `src/mqtt.js`:
+   ```js
+   import mqtt from 'mqtt'
+
+   // Free public broker — no account needed, good for prototyping
+   // Use a unique topic prefix to avoid clashing with other users
+   const BROKER = 'wss://broker.hivemq.com:8884/mqtt'
+   const TOPIC_PREFIX = 'my-prototype' // change this per project
+
+   let client
+
+   export function initMQTT({ onMessage } = {}) {
+     client = mqtt.connect(BROKER)
+
+     client.on('connect', () => {
+       console.log('MQTT connected')
+       client.subscribe(`${TOPIC_PREFIX}/#`, (err) => {
+         if (err) console.error('Subscribe error:', err)
+       })
+     })
+
+     client.on('message', (topic, message) => {
+       try {
+         const payload = JSON.parse(message.toString())
+         onMessage?.({ topic, payload })
+       } catch {
+         onMessage?.({ topic, payload: message.toString() })
+       }
+     })
+
+     client.on('error', (err) => console.error('MQTT error:', err))
+
+     return client
+   }
+
+   export function publish(subtopic, payload) {
+     client?.publish(
+       `${TOPIC_PREFIX}/${subtopic}`,
+       JSON.stringify(payload)
+     )
+   }
+   ```
+
+3. Initialize in `src/main.js`:
+   ```js
+   import { initMQTT, publish } from './mqtt.js'
+
+   initMQTT({
+     onMessage({ topic, payload }) {
+       console.log(topic, payload)
+       // handle incoming messages here
+     }
+   })
+
+   // Send a command — any subscribed client receives it (browser or hardware)
+   publish('commands', { action: 'set-color', r: 255, g: 0, b: 0 })
+   publish('commands', { action: 'toggle', device: 'light-1' })
+   ```
+
+**On the hardware side (Arduino/ESP32 example using PubSubClient):**
+```cpp
+#include <PubSubClient.h>
+// broker: broker.hivemq.com, port: 1883
+// subscribe to: my-prototype/#
+// publish to: my-prototype/sensor
+```
+
+**Topic structure — keep it organised:**
+
+| Topic | Purpose |
+|-------|---------|
+| `my-prototype/commands` | Browser → hardware commands |
+| `my-prototype/sensor` | Hardware → browser sensor data |
+| `my-prototype/status` | Hardware → browser status updates |
+
+**Broker options:**
+
+| Broker | Notes |
+|--------|-------|
+| `broker.hivemq.com` | Free, public, no account — for prototyping only |
+| HiveMQ Cloud | Free tier, persistent, requires account at hivemq.com |
+| `test.mosquitto.org` | Free, public, Eclipse project |
+
+**Notes:**
+- The public broker is shared with the world — anyone who knows your topic name can publish to it. Use a unique prefix and don't send sensitive data
+- For a private broker, sign up for HiveMQ Cloud free tier — add the username/password as `VITE_MQTT_USER` / `VITE_MQTT_PASS` env vars and pass them to `mqtt.connect(BROKER, { username, password })`
+- Smartwatches: Apple Watch requires Swift/Xcode — no browser path. For watch prototyping, simulate the watch UI on a phone in a small viewport
+
+---
+
 ### Make it installable on mobile (PWA)
 
 Progressive Web Apps can be installed to the home screen on iOS and Android directly from a Vercel URL — no app store required. Once installed they open full-screen with no browser chrome and work offline after the first visit.
