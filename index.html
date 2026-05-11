@@ -85,11 +85,24 @@
       }
       .btn:hover { background: #000; color: #fff; text-decoration: none; }
 
-      /* ── Section label ── */
+      /* ── Expandable sections ── */
+      details summary {
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+      }
+      details summary::-webkit-details-marker { display: none; }
+      details summary::marker { display: none; }
+
       .section-label {
         text-transform: uppercase;
         letter-spacing: 0.1em;
-        margin-bottom: 1.25rem;
+      }
+      .section-label::after { content: ' [+]'; }
+      details[open] > .section-label::after { content: ' [-]'; }
+
+      details > *:not(summary) {
+        margin-top: 1.25rem;
       }
 
       /* ── Includes list ── */
@@ -175,8 +188,8 @@
 
       <hr>
 
-      <div class="section">
-        <div class="section-label">What's included</div>
+      <details class="section">
+        <summary class="section-label">What's included</summary>
         <div class="includes-list">
           <div class="includes-row">
             <strong>Vite</strong>
@@ -204,12 +217,12 @@
           </div>
         </div>
         <p class="on-demand-note">Also on demand: GSAP, Three.js, PixiJS, Lenis, Swiper, Stripe, contact forms, page loaders, custom cursors, and more.</p>
-      </div>
+      </details>
 
       <hr>
 
-      <div class="section">
-        <div class="section-label">How it works</div>
+      <details class="section">
+        <summary class="section-label">How it works</summary>
         <div class="steps">
           <div class="step">
             <div class="step-num">01.</div>
@@ -240,12 +253,12 @@
             </div>
           </div>
         </div>
-      </div>
+      </details>
 
       <hr>
 
-      <div class="section">
-        <div class="section-label">What to ask</div>
+      <details class="section">
+        <summary class="section-label">What to ask</summary>
         <div class="prompts">
           <div class="prompt">Get this running so I can see it in my browser</div>
           <div class="prompt">Set up GitHub and deploy to Vercel</div>
@@ -259,7 +272,7 @@
           <div class="prompt">Add a section that pulls from my database</div>
           <div class="prompt">Push my changes and deploy</div>
         </div>
-      </div>
+      </details>
 
     </div>
 
