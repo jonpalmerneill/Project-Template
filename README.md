@@ -6,14 +6,18 @@ A minimal website starter you customize and deploy by chatting with AI — no te
 
 ---
 
-## What's included
+## What's pre-installed
 
-- **Local dev server** — see changes in your browser instantly
+- **Vite** — local dev server, instant reload, builds for production
+- **Motion** — animations, scroll effects, and physics-based motion
+- **Supabase** — database and auth client (bring your own project)
+- **Alpine.js** — reactive UI directly in HTML, no framework needed
+- **Lenis** — smooth momentum scrolling
 - **Password gate** — optional shared-password protection for private sites
-- **Supabase** — optional database and user authentication
-- **Motion** — animation library, ready to use
 - **Vercel** — deploys automatically when you push to GitHub
 - **Figma** — your AI editor can pull designs and tokens directly from your files
+
+Everything else — GSAP, Three.js, Stripe, charts, maps, PWA, and more — your AI editor adds in one ask.
 
 ---
 
@@ -29,11 +33,13 @@ Give your project a name, set it to **Private**, and click **Create repository**
 
 Install [GitHub Desktop](https://desktop.github.com), then on your new repo page click **Code → Open with GitHub Desktop**. Choose where to save it and click Clone.
 
-### Step 3 — Open in Cursor
+### Step 3 — Open in Cursor or Claude Code
 
-[Cursor](https://cursor.com) is a free AI code editor. Open it, go to **File → Open Folder**, and select your project folder.
+**[Cursor](https://cursor.com)** is a free AI code editor. Open it, go to **File → Open Folder**, and select your project folder.
 
-The project is pre-configured so Cursor understands the entire setup automatically. Just start chatting — Cursor handles installing dependencies, starting the preview server, setting up Vercel, and making whatever changes you ask for.
+**[Claude Code](https://claude.ai/code)** is Anthropic's AI CLI. Run `claude` in the project folder.
+
+The project is pre-configured so either tool understands the entire setup automatically — just start chatting. They handle installing dependencies, starting the preview server, setting up Vercel, and making whatever changes you ask for.
 
 ---
 
@@ -74,12 +80,6 @@ All free tiers are sufficient to start.
 | [Cursor](https://cursor.com) | AI editor that builds and deploys for you |
 | [Vercel](https://vercel.com) | Hosts your site |
 | [Supabase](https://supabase.com) | Database and user auth (only if you need it) |
-
----
-
-## Also works with Claude Code
-
-If you use [Claude Code](https://claude.ai/code), the project includes a `CLAUDE.md` file that gives it the same automatic context.
 
 ---
 

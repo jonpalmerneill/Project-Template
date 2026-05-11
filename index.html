@@ -10,6 +10,10 @@
     <title>Project Template — Build websites with AI</title>
     <meta name="description" content="A minimal website starter. Customize and deploy it by chatting with AI — no terminal commands needed." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:title" content="Project Template — Build websites with AI" />
+    <meta property="og:description" content="A minimal website starter. Customize and deploy it by chatting with AI — no terminal commands needed." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
     <style>
       @font-face {
         font-family: 'jgs5';
@@ -148,6 +152,16 @@
         margin-top: 1.25rem;
       }
 
+      .includes-separator {
+        font-size: 0.65em;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        opacity: 0.4;
+        padding-top: calc(0.5rem + 10px);
+        margin-top: calc(0.25rem + 5px);
+        border-top: 1px solid currentColor;
+      }
+
       .includes-note {
         font-size: 0.8em;
         opacity: 0.55;
@@ -236,56 +250,41 @@
             <span>Local preview server. See changes instantly.</span>
           </div>
           <div class="includes-row">
-            <strong>Vercel</strong>
-            <span>Auto-deploys when you push to GitHub.</span>
+            <strong>Motion</strong>
+            <span>Declarative animations, scroll effects, and physics-based motion.</span>
           </div>
           <div class="includes-row">
             <strong>Supabase</strong>
             <span>Database and user authentication, optional.</span>
           </div>
           <div class="includes-row">
-            <strong>Password gate</strong>
-            <span>Optional shared-password protection.</span>
-          </div>
-          <div class="includes-row">
-            <strong>PWA</strong>
-            <span>Install to home screen on iOS and Android. Works offline. No app store needed.</span>
-          </div>
-          <div class="includes-row">
-            <strong>Realtime sync</strong>
-            <span>Live messaging and presence across devices via Supabase Realtime.</span>
-          </div>
-          <div class="includes-row">
-            <strong>MQTT</strong>
-            <span>Pub/sub messaging between browsers, phones, and physical hardware like Arduino and ESP32.</span>
-          </div>
-          <div class="includes-row">
             <strong>Alpine.js</strong>
             <span>Reactive tabs, filters, and live data in HTML — no framework needed.</span>
           </div>
           <div class="includes-row">
-            <strong>Motion</strong>
-            <span>Animation library, pre-installed.</span>
+            <strong>Lenis</strong>
+            <span>Smooth momentum scrolling.</span>
+          </div>
+          <div class="includes-separator">One ask away</div>
+          <div class="includes-row">
+            <strong>Vercel</strong>
+            <span>Auto-deploys when you push to GitHub.</span>
+          </div>
+          <div class="includes-row">
+            <strong>Password gate</strong>
+            <span>Optional shared-password protection.</span>
           </div>
           <div class="includes-row">
             <strong>Figma</strong>
             <span>Your AI editor can pull designs and tokens directly from your files.</span>
           </div>
           <div class="includes-row">
+            <strong>Dark / light mode</strong>
+            <span>Theme toggle with system preference detection and no flash on load.</span>
+          </div>
+          <div class="includes-row">
             <strong>GSAP</strong>
             <span>Advanced scroll animations, timelines, and pinned sections.</span>
-          </div>
-          <div class="includes-row">
-            <strong>Three.js</strong>
-            <span>3D scenes, WebGL backgrounds, and 3D model loading.</span>
-          </div>
-          <div class="includes-row">
-            <strong>PixiJS</strong>
-            <span>2D WebGL, sprites, particle systems, and canvas effects.</span>
-          </div>
-          <div class="includes-row">
-            <strong>Lenis</strong>
-            <span>Smooth momentum scrolling.</span>
           </div>
           <div class="includes-row">
             <strong>Swiper</strong>
@@ -304,20 +303,16 @@
             <span>Styled cursor with hover states.</span>
           </div>
           <div class="includes-row">
+            <strong>Three.js</strong>
+            <span>3D scenes, WebGL backgrounds, and 3D model loading.</span>
+          </div>
+          <div class="includes-row">
+            <strong>PixiJS</strong>
+            <span>2D WebGL, sprites, particle systems, and canvas effects.</span>
+          </div>
+          <div class="includes-row">
             <strong>GLSL shaders</strong>
             <span>Custom visual effects — CRT, distortion, noise.</span>
-          </div>
-          <div class="includes-row">
-            <strong>Contact form</strong>
-            <span>Email submissions via Formspree or Resend.</span>
-          </div>
-          <div class="includes-row">
-            <strong>Stripe</strong>
-            <span>Payments via serverless checkout.</span>
-          </div>
-          <div class="includes-row">
-            <strong>Chart.js</strong>
-            <span>Data visualization and charts.</span>
           </div>
           <div class="includes-row">
             <strong>Dot field</strong>
@@ -330,6 +325,26 @@
           <div class="includes-row">
             <strong>Text scramble</strong>
             <span>Characters cycle randomly before settling.</span>
+          </div>
+          <div class="includes-row">
+            <strong>Contact form</strong>
+            <span>Email submissions via Formspree or Resend.</span>
+          </div>
+          <div class="includes-row">
+            <strong>Stripe</strong>
+            <span>Payments via serverless checkout.</span>
+          </div>
+          <div class="includes-row">
+            <strong>Surveys</strong>
+            <span>Multi-step forms with branching logic via SurveyJS or Supabase.</span>
+          </div>
+          <div class="includes-row">
+            <strong>Audio player</strong>
+            <span>Custom play/pause, scrubbing timeline, and multi-track support.</span>
+          </div>
+          <div class="includes-row">
+            <strong>Chart.js</strong>
+            <span>Data visualization and charts.</span>
           </div>
           <div class="includes-row">
             <strong>Leaflet maps</strong>
@@ -348,16 +363,16 @@
             <span>Weather, news, government data, and more — free tiers included.</span>
           </div>
           <div class="includes-row">
-            <strong>Surveys</strong>
-            <span>Multi-step forms with branching logic via SurveyJS or Supabase.</span>
+            <strong>PWA</strong>
+            <span>Install to home screen on iOS and Android. Works offline. No app store needed.</span>
           </div>
           <div class="includes-row">
-            <strong>Audio player</strong>
-            <span>Custom play/pause, scrubbing timeline, and multi-track support.</span>
+            <strong>Realtime sync</strong>
+            <span>Live messaging and presence across devices via Supabase Realtime.</span>
           </div>
           <div class="includes-row">
-            <strong>Dark / light mode</strong>
-            <span>Theme toggle with system preference detection and no flash on load.</span>
+            <strong>MQTT</strong>
+            <span>Pub/sub messaging between browsers, phones, and physical hardware like Arduino and ESP32.</span>
           </div>
         </div>
       </details>

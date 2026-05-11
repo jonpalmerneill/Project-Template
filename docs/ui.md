@@ -707,6 +707,92 @@ createIcons({ icons }) // auto-replaces <i data-lucide="name"> elements
 
 ---
 
+## Toast notifications
+
+In-page alert messages that appear briefly and dismiss themselves. No library needed.
+
+**Create `src/toast.js`:**
+```js
+const container = (() => {
+  const el = document.createElement('div')
+  el.className = 'toast-container'
+  document.body.appendChild(el)
+  return el
+})()
+
+export function toast(message, { type = 'info', duration = 4000 } = {}) {
+  const el = document.createElement('div')
+  el.className = `toast toast--${type}`
+  el.textContent = message
+  el.setAttribute('role', 'status')
+  container.appendChild(el)
+
+  requestAnimationFrame(() => el.classList.add('toast--visible'))
+
+  const remove = () => {
+    el.classList.remove('toast--visible')
+    el.addEventListener('transitionend', () => el.remove(), { once: true })
+  }
+
+  const timer = setTimeout(remove, duration)
+  el.addEventListener('click', () => { clearTimeout(timer); remove() })
+}
+```
+
+**Add to `src/style.css`:**
+```css
+.toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius);
+  font-size: var(--font-size-sm);
+  background: var(--color-text);
+  color: var(--color-bg);
+  max-width: 320px;
+  opacity: 0;
+  transform: translateY(0.5rem);
+  transition: opacity var(--duration-base) var(--ease-out),
+              transform var(--duration-base) var(--ease-out);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.toast--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast--success { background: #16a34a; color: #fff; }
+.toast--error   { background: #dc2626; color: #fff; }
+.toast--warning { background: #d97706; color: #fff; }
+```
+
+**Usage anywhere in the app:**
+```js
+import { toast } from './toast.js'
+
+toast('Saved!')
+toast('Something went wrong.', { type: 'error' })
+toast('Check your connection.', { type: 'warning', duration: 6000 })
+```
+
+**Notes:**
+- Clicking a toast dismisses it immediately
+- Multiple toasts stack vertically — each manages its own timer
+- `role="status"` announces the message to screen readers without interrupting
+
+---
+
 ## Adding pages
 
 Create a new `.html` file in the project root. Vite builds it automatically. Add a `<link>` in `index.html` to navigate to it. Each page needs its own `<script type="module">` tag pointing to a JS entry file.

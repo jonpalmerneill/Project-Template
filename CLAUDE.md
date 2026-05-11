@@ -255,7 +255,7 @@ Edit `index.html`. The main content lives inside `<main id="app" class="app">`.
 - Favicon: replace `public/favicon.svg` with any SVG
 
 ### Add a new page
-Create a new `.html` file in the project root. Vite builds it automatically. Add a `<link>` in `index.html` to navigate to it. Each page needs its own `<script type="module">` tag pointing to a JS entry file.
+Create a new `.html` file in the project root. Vite builds it automatically. Add an `<a href="/page.html">` in `index.html` to navigate to it. Each page needs its own `<script type="module">` tag pointing to a JS entry file.
 
 ### Add a Supabase database query
 1. Guide the user through creating a table in the Supabase dashboard
@@ -267,9 +267,15 @@ For more patterns, see `docs/data.md`.
 ### Add icons
 Find the icon at [lucide.dev](https://lucide.dev) or [heroicons.com](https://heroicons.com), copy the SVG, and paste it directly into `index.html`. Size with CSS and color with `color: var(--color-primary)`.
 
+### Rename the project
+1. Update the `name` field in `package.json`
+2. Update the `<title>` tag in `index.html`
+3. If deployed to Vercel, rename it in the Vercel dashboard under **Settings → General → Project Name**
+
 ### Disable password protection
-1. Remove `initAuth()` from `src/main.js`
+1. Remove `await initAuth()` from `src/main.js`
 2. Remove the `<div id="gate">` block from `index.html`
+3. Remove the gate CSS from `src/style.css` — the `.gate`, `.gate-box`, `.gate-title`, `.gate-form`, `.gate-input`, `.gate-button`, and `.gate-error` blocks
 
 ---
 
@@ -344,6 +350,15 @@ The anon key is safe to expose in the browser — Supabase uses Row Level Securi
 - Never ask the user to manually edit a file — edit it for them
 - Before adding any feature, read the relevant `docs/` file
 - Run accessibility and performance checks from `docs/checks.md` before considering a feature done
+
+### TypeScript
+
+Vite supports TypeScript natively — no extra plugin needed. If the user asks to add TypeScript:
+1. Rename `.js` source files to `.ts`
+2. Run `npx tsc --init` to generate a `tsconfig.json`
+3. Install type definitions as needed: `npm install -D @types/node`
+
+Don't add TypeScript unless the user asks. The default is plain JavaScript.
 
 ### When vanilla JS isn't enough
 
