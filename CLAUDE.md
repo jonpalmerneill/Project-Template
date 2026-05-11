@@ -344,3 +344,20 @@ The anon key is safe to expose in the browser — Supabase uses Row Level Securi
 - Never ask the user to manually edit a file — edit it for them
 - Before adding any feature, read the relevant `docs/` file
 - Run accessibility and performance checks from `docs/checks.md` before considering a feature done
+
+### When vanilla JS isn't enough
+
+The default is always vanilla JS. But some projects genuinely need a framework — don't fight it when these signals appear:
+
+- Multiple URL-managed views with client-side routing
+- State that needs to be shared across many deeply nested components
+- SSR / SEO requirements for dynamic content
+- A large app where the same UI components are reused across many pages
+
+When the user hits this ceiling, name it honestly. Don't try to approximate framework behavior with increasingly complex vanilla JS. Suggest the gentlest next step:
+
+- **SvelteKit** — closest to vanilla JS in structure (HTML/CSS/JS files, minimal abstraction, file-based routing). Best first framework for users coming from this template.
+- **Nuxt** — if they're leaning toward Vue
+- **Next.js** — if they're leaning toward React
+
+This template is not the right foundation for those projects. Help them start fresh in the right tool rather than stretching this one past its limits.
