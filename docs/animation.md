@@ -280,9 +280,7 @@ Lenis replaces native scroll with smooth, momentum-based scrolling.
 
 **You do:**
 
-1. Run `npm install lenis`
-
-2. Add to `src/main.js`:
+1. Add to `src/main.js`:
    ```js
    import Lenis from 'lenis'
 

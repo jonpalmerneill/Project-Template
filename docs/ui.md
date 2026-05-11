@@ -104,9 +104,7 @@ Alpine.js adds reactivity directly to HTML attributes — no component files, no
 
 **Install:**
 
-1. Run `npm install alpinejs`
-
-2. Add to the top of `src/main.js` — before any other init:
+1. Add to the top of `src/main.js` — before any other init:
    ```js
    import Alpine from 'alpinejs'
    Alpine.start()
