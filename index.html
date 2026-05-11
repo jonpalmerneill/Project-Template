@@ -14,174 +14,145 @@
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
       body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        color: #1a1a1a;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.875rem;
+        line-height: 1.75;
+        color: #000;
         background: #fff;
-        line-height: 1.6;
       }
 
-      a { color: inherit; text-decoration: none; }
+      a { color: #000; }
+      a:hover { opacity: 0.5; }
 
       .container {
-        max-width: 720px;
+        max-width: 640px;
         margin: 0 auto;
         padding: 0 1.5rem;
       }
 
-      /* ── Hero ── */
-      .hero {
-        padding: 5rem 0 4rem;
-        text-align: center;
-      }
-      .hero h1 {
-        font-size: clamp(2rem, 6vw, 3.25rem);
-        font-weight: 700;
-        line-height: 1.1;
-        letter-spacing: -0.02em;
-        margin-bottom: 1.25rem;
-      }
-      .tagline {
-        font-size: 1.1rem;
-        color: #6b7280;
-        max-width: 480px;
-        margin: 0 auto 2rem;
-      }
-      .hero-actions {
-        display: flex;
-        gap: 0.75rem;
-        justify-content: center;
-        flex-wrap: wrap;
+      hr {
+        border: none;
+        border-top: 1px solid #000;
+        margin: 2.5rem 0;
       }
 
-      /* ── Buttons ── */
+      /* ── Hero ── */
+      .hero { padding: 4rem 0 0; }
+
+      .hero h1 {
+        font-size: 1.5rem;
+        font-weight: bold;
+        line-height: 1.3;
+        margin-bottom: 1rem;
+      }
+
+      .tagline {
+        margin-bottom: 1.75rem;
+        opacity: 0.6;
+      }
+
+      .hero-actions { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+
       .btn {
         display: inline-block;
-        padding: 0.7rem 1.4rem;
-        border-radius: 6px;
-        font-size: 0.95rem;
-        font-weight: 600;
-        transition: opacity 0.15s;
+        color: #000;
+        text-decoration: none;
+        border: 1px solid #000;
+        padding: 0.3rem 0.7rem;
+        font-family: inherit;
+        font-size: inherit;
+        transition: background 0.1s, color 0.1s;
       }
-      .btn:hover { opacity: 0.82; }
-      .btn-primary { background: #3b5bdb; color: #fff; }
-      .btn-secondary {
-        background: #f8f9fa;
-        color: #1a1a1a;
-        border: 1px solid #e0e0e0;
-      }
+      .btn:hover { background: #000; color: #fff; opacity: 1; }
+      .btn-secondary { opacity: 0.45; }
+      .btn-secondary:hover { opacity: 1; }
 
-      /* ── Sections ── */
-      .section {
-        padding: 3.5rem 0;
-        border-top: 1px solid #e0e0e0;
-      }
+      /* ── Section label ── */
       .section-label {
-        font-size: 0.7rem;
-        font-weight: 700;
+        font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.1em;
-        color: #3b5bdb;
-        margin-bottom: 0.875rem;
-      }
-      h2 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        letter-spacing: -0.01em;
-        margin-bottom: 0.5rem;
-      }
-      .section-intro {
-        color: #6b7280;
-        margin-bottom: 2rem;
-        font-size: 0.95rem;
+        opacity: 0.4;
+        margin-bottom: 1.25rem;
       }
 
-      /* ── Includes grid ── */
-      .includes-grid {
+      /* ── Includes list ── */
+      .includes-list { display: flex; flex-direction: column; }
+
+      .includes-row {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1px;
-        background: #e0e0e0;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        overflow: hidden;
+        grid-template-columns: 9rem 1fr;
+        gap: 1rem;
+        padding: 0.45rem 0;
+        border-top: 1px solid #ddd;
       }
-      .includes-item {
-        background: #fff;
-        padding: 1.125rem 1.375rem;
+      .includes-row:last-of-type { border-bottom: 1px solid #ddd; }
+      .includes-row strong { font-weight: bold; }
+      .includes-row span { opacity: 0.55; }
+
+      .on-demand-note {
+        margin-top: 1.25rem;
+        opacity: 0.4;
+        font-size: 0.8rem;
       }
-      .includes-item strong { display: block; margin-bottom: 0.2rem; font-size: 0.95rem; }
-      .includes-item span { font-size: 0.85rem; color: #6b7280; }
 
       /* ── Steps ── */
       .steps { display: flex; flex-direction: column; gap: 1.5rem; }
-      .step { display: flex; gap: 1.125rem; align-items: flex-start; }
+
+      .step { display: grid; grid-template-columns: 3rem 1fr; align-items: start; }
+
       .step-num {
-        flex-shrink: 0;
-        width: 1.75rem;
-        height: 1.75rem;
-        border-radius: 50%;
-        background: #3b5bdb;
-        color: #fff;
-        font-weight: 700;
-        font-size: 0.8rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-top: 0.1rem;
-      }
-      .step-body strong { display: block; margin-bottom: 0.35rem; font-size: 0.95rem; }
-      .step-body p { font-size: 0.875rem; color: #6b7280; line-height: 1.55; }
-      .step-body p + p { margin-top: 0.35rem; }
-      .step-body kbd {
-        display: inline-block;
-        padding: 0.1em 0.45em;
-        font-size: 0.8em;
-        font-family: inherit;
-        background: #f3f4f6;
-        border: 1px solid #d1d5db;
-        border-bottom-width: 2px;
-        border-radius: 4px;
-        color: #374151;
+        font-weight: bold;
+        opacity: 0.3;
+        padding-top: 0.05rem;
       }
 
-      /* ── On demand note ── */
-      .on-demand-note {
-        margin-top: 1rem;
-        font-size: 0.8rem;
-        color: #6b7280;
+      .step-body strong { font-weight: bold; display: block; margin-bottom: 0.2rem; }
+      .step-body p { opacity: 0.6; line-height: 1.65; }
+      .step-body p + p { margin-top: 0.25rem; }
+      .step-body a { color: #000; }
+
+      .step-body kbd {
+        display: inline-block;
+        font-family: inherit;
+        font-size: 0.9em;
+        background: #f2f2f2;
+        border: 1px solid #ccc;
+        border-bottom-width: 2px;
+        border-radius: 2px;
+        padding: 0 0.35em;
+        line-height: 1.4;
       }
 
       /* ── Prompts ── */
-      .prompts { display: flex; flex-direction: column; gap: 0.5rem; }
+      .prompts { display: flex; flex-direction: column; }
+
       .prompt {
-        background: #f8f9fa;
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
-        padding: 0.6rem 1rem;
-        font-size: 0.875rem;
-        color: #6b7280;
+        padding: 0.45rem 0;
+        border-top: 1px solid #ddd;
+        opacity: 0.6;
       }
-      .prompt::before { content: '"'; color: #3b5bdb; font-weight: 700; }
-      .prompt::after  { content: '"'; color: #3b5bdb; font-weight: 700; }
+      .prompts .prompt:last-child { border-bottom: 1px solid #ddd; }
+
+      .prompt::before { content: '\201C'; font-weight: bold; opacity: 1; color: #000; }
+      .prompt::after  { content: '\201D'; font-weight: bold; opacity: 1; color: #000; }
 
       /* ── Footer ── */
-      footer {
-        padding: 2rem 0;
-        border-top: 1px solid #e0e0e0;
-        margin-top: 1rem;
-      }
+      footer { padding: 2.5rem 0 3.5rem; }
+
       footer .container {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 0.85rem;
-        color: #6b7280;
+        opacity: 0.35;
       }
-      footer a:hover { color: #1a1a1a; }
 
-      @media (max-width: 560px) {
-        .includes-grid { grid-template-columns: 1fr; }
-        footer .container { flex-direction: column; gap: 0.5rem; text-align: center; }
+      footer a { color: #000; text-decoration: none; }
+      footer a:hover { opacity: 0.5; }
+
+      @media (max-width: 500px) {
+        .includes-row { grid-template-columns: 1fr; gap: 0.1rem; }
+        footer .container { flex-direction: column; gap: 0.35rem; text-align: center; }
       }
     </style>
   </head>
@@ -198,30 +169,32 @@
         </div>
       </div>
 
+      <hr>
+
       <div class="section">
         <div class="section-label">What's included</div>
-        <div class="includes-grid">
-          <div class="includes-item">
+        <div class="includes-list">
+          <div class="includes-row">
             <strong>Vite</strong>
             <span>Local preview server. See changes instantly.</span>
           </div>
-          <div class="includes-item">
+          <div class="includes-row">
             <strong>Vercel</strong>
             <span>Auto-deploys when you push to GitHub.</span>
           </div>
-          <div class="includes-item">
+          <div class="includes-row">
             <strong>Supabase</strong>
             <span>Database and user authentication, optional.</span>
           </div>
-          <div class="includes-item">
+          <div class="includes-row">
             <strong>Password gate</strong>
             <span>Optional shared-password protection.</span>
           </div>
-          <div class="includes-item">
+          <div class="includes-row">
             <strong>Motion</strong>
             <span>Animation library pre-installed. GSAP, Three.js, PixiJS, and more available on demand.</span>
           </div>
-          <div class="includes-item">
+          <div class="includes-row">
             <strong>Figma</strong>
             <span>Your AI editor can pull designs and tokens directly from your files.</span>
           </div>
@@ -229,32 +202,34 @@
         <p class="on-demand-note">Also on demand: GSAP, Three.js, PixiJS, Lenis, Swiper, Stripe, contact forms, page loaders, custom cursors, and more.</p>
       </div>
 
+      <hr>
+
       <div class="section">
         <div class="section-label">How it works</div>
         <div class="steps">
           <div class="step">
-            <div class="step-num">1</div>
+            <div class="step-num">01.</div>
             <div class="step-body">
               <strong>Copy this template on GitHub</strong>
               <p>Click <kbd>Use this template</kbd> above, then <kbd>Create a new repository</kbd>. Give it a name and click <kbd>Create repository</kbd>. This makes a fresh copy in your GitHub account — no history carried over.</p>
             </div>
           </div>
           <div class="step">
-            <div class="step-num">2</div>
+            <div class="step-num">02.</div>
             <div class="step-body">
               <strong>Get the files onto your computer</strong>
-              <p>Install <a href="https://desktop.github.com" style="color:#3b5bdb">GitHub Desktop</a>. On your new repo page, click the green <kbd>Code</kbd> button, then <kbd>Open with GitHub Desktop</kbd>. Choose where to save it and click <kbd>Clone</kbd>.</p>
+              <p>Install <a href="https://desktop.github.com">GitHub Desktop</a>. On your new repo page, click the green <kbd>Code</kbd> button, then <kbd>Open with GitHub Desktop</kbd>. Choose where to save it and click <kbd>Clone</kbd>.</p>
             </div>
           </div>
           <div class="step">
-            <div class="step-num">3</div>
+            <div class="step-num">03.</div>
             <div class="step-body">
               <strong>Open the project in Cursor</strong>
-              <p>Install <a href="https://cursor.com" style="color:#3b5bdb">Cursor</a> — a free AI code editor. Open it, go to <kbd>File</kbd> → <kbd>Open Folder</kbd>, and select the folder you just cloned.</p>
+              <p>Install <a href="https://cursor.com">Cursor</a> — a free AI code editor. Open it, go to <kbd>File</kbd> → <kbd>Open Folder</kbd>, and select the folder you just cloned.</p>
             </div>
           </div>
           <div class="step">
-            <div class="step-num">4</div>
+            <div class="step-num">04.</div>
             <div class="step-body">
               <strong>Open the AI and start building</strong>
               <p>Press <kbd>⌘I</kbd> (Mac) or <kbd>Ctrl I</kbd> (Windows) to open Cursor's AI. Cursor reads the project automatically — just describe what you want and it handles the rest.</p>
@@ -263,9 +238,10 @@
         </div>
       </div>
 
+      <hr>
+
       <div class="section">
         <div class="section-label">What to ask</div>
-        <p class="section-intro">You don't need to know how any of this works. Just describe what you want.</p>
         <div class="prompts">
           <div class="prompt">Get this running so I can see it in my browser</div>
           <div class="prompt">Set up GitHub and deploy to Vercel</div>
