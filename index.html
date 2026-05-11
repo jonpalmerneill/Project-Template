@@ -90,6 +90,9 @@
         cursor: pointer;
         list-style: none;
         user-select: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
       details summary::-webkit-details-marker { display: none; }
       details summary::marker { display: none; }
@@ -98,8 +101,14 @@
         text-transform: uppercase;
         letter-spacing: 0.1em;
       }
-      .section-label::after { content: ' [+]'; }
-      details[open] > .section-label::after { content: ' [-]'; }
+      .section-label::after {
+        content: '›';
+        display: inline-block;
+        transition: transform 0.15s ease;
+      }
+      details[open] > .section-label::after {
+        transform: rotate(90deg);
+      }
 
       details > *:not(summary) {
         margin-top: 1.25rem;
