@@ -788,6 +788,79 @@ No library needed — inline SVGs are the right approach. Find icons at [lucide.
 
 Payment logic always runs server-side. Create `api/create-checkout.js` as a Vercel serverless function using the Stripe SDK. Add `STRIPE_SECRET_KEY` to Vercel's environment variables — never prefix it with `VITE_`.
 
+### Add a survey or multi-step form
+
+Two approaches — pick based on how much UI control the user needs.
+
+**Option A — SurveyJS (recommended for complex surveys)**
+
+Renders multi-step surveys from a JSON schema. Handles branching logic, conditional questions, validation, and progress bars out of the box.
+
+1. Run `npm install survey-core survey-js-ui`
+2. Add `<div id="survey"></div>` to `index.html`
+3. Create `src/survey.js`:
+   ```js
+   import { Model } from 'survey-core'
+   import { SurveyJS } from 'survey-js-ui'
+   import 'survey-core/defaultV2.min.css'
+
+   export function initSurvey(containerId = 'survey') {
+     const survey = new Model({
+       title: 'Survey Title',
+       showProgressBar: 'top',
+       pages: [
+         {
+           elements: [
+             { type: 'text', name: 'name', title: 'Your name?', isRequired: true },
+             { type: 'radiogroup', name: 'rating', title: 'How satisfied?',
+               choices: ['Very satisfied', 'Satisfied', 'Neutral', 'Dissatisfied'] },
+           ],
+         },
+         {
+           elements: [
+             { type: 'comment', name: 'feedback', title: 'Any feedback?' },
+           ],
+         },
+       ],
+     })
+
+     survey.onComplete.add(async (sender) => {
+       const responses = sender.data
+       // await supabase.from('survey_responses').insert([responses])
+     })
+
+     new SurveyJS(document.getElementById(containerId), survey)
+   }
+   ```
+4. Call `initSurvey()` from `src/main.js`
+
+Key question types: `text`, `comment`, `radiogroup`, `checkbox`, `dropdown`, `rating`, `boolean`, `matrix`
+
+Branching logic: `visibleIf: "{question_name} = 'value'"` on any question element
+
+Style to match the site: `survey.applyTheme({ cssVariables: { '--sjs-primary-backcolor': 'var(--color-primary)' } })`
+
+**Option B — Custom survey backed by Supabase**
+
+Use when the user needs a fully branded, pixel-perfect survey with responses in their own database.
+
+Create three tables in Supabase: `surveys` (id, title), `questions` (id, survey_id, position, type, label, options jsonb, required), `responses` (id, survey_id, answers jsonb, submitted_at).
+
+Build a step-by-step runner in `src/survey.js` that:
+1. Loads questions from Supabase ordered by `position`
+2. Renders one question at a time with Back/Next buttons
+3. Collects answers in a local object `{ question_id: value }`
+4. On final step: inserts `{ survey_id, answers }` into `responses` table
+5. Shows a completion message
+
+Question rendering: `text` → `<input>`, `radio` → radio buttons from `options` array, `scale` → `<input type="range">`
+
+**When to use each:**
+- SurveyJS: branching logic, many question types, faster to build
+- Custom Supabase: pixel-perfect design, full ownership of response data
+
+---
+
 ### Add a contact form
 
 Two approaches — pick based on what the user needs:

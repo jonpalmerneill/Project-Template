@@ -1617,6 +1617,213 @@ Stripe is the standard for web payments. The key rule: **payment logic runs serv
 5. Add `STRIPE_SECRET_KEY` and `SITE_URL` to their Vercel environment variables (never `VITE_` prefixed — server only)
 6. Add `stripe` as a server-side dependency: `npm install stripe`
 
+### Add a survey or multi-step form
+
+Two approaches — pick based on how much control the user needs over the UI.
+
+**Option A — SurveyJS (recommended for complex surveys)**
+
+SurveyJS renders multi-step surveys from a JSON schema. Handles branching logic, validation, progress bars, conditional questions, and multiple page flows — without building any of that from scratch.
+
+**You do:**
+
+1. Run `npm install survey-core survey-js-ui`
+
+2. Add a container to `index.html`:
+   ```html
+   <div id="survey"></div>
+   ```
+
+3. Create `src/survey.js`:
+   ```js
+   import { Model } from 'survey-core'
+   import { SurveyJS } from 'survey-js-ui'
+   import 'survey-core/defaultV2.min.css'
+
+   export function initSurvey(containerId = 'survey') {
+     const surveyJson = {
+       title: 'Your Survey Title',
+       showProgressBar: 'top',
+       pages: [
+         {
+           name: 'page1',
+           elements: [
+             {
+               type: 'text',
+               name: 'name',
+               title: 'What is your name?',
+               isRequired: true,
+             },
+             {
+               type: 'radiogroup',
+               name: 'satisfaction',
+               title: 'How satisfied are you?',
+               choices: ['Very satisfied', 'Satisfied', 'Neutral', 'Dissatisfied'],
+               isRequired: true,
+             },
+           ],
+         },
+         {
+           name: 'page2',
+           elements: [
+             {
+               type: 'comment',
+               name: 'feedback',
+               title: 'Any additional feedback?',
+             },
+           ],
+         },
+       ],
+     }
+
+     const survey = new Model(surveyJson)
+
+     // Handle completion — save to Supabase, post to an API, or log
+     survey.onComplete.add(async (sender) => {
+       const responses = sender.data
+       console.log('Survey results:', responses)
+       // await supabase.from('survey_responses').insert([responses])
+     })
+
+     const surveyUI = new SurveyJS(document.getElementById(containerId), survey)
+   }
+   ```
+
+4. Call from `src/main.js`:
+   ```js
+   import { initSurvey } from './survey.js'
+   initSurvey()
+   ```
+
+**Key SurveyJS question types:**
+
+| type | What it renders |
+|------|----------------|
+| `text` | Single-line text input |
+| `comment` | Multi-line textarea |
+| `radiogroup` | Single-choice radio buttons |
+| `checkbox` | Multi-choice checkboxes |
+| `dropdown` | Select menu |
+| `rating` | Star or number rating scale |
+| `boolean` | Yes/No toggle |
+| `matrix` | Grid of radio buttons |
+| `html` | Arbitrary HTML between questions |
+
+**Branching logic (show question only if condition met):**
+```js
+{
+  type: 'text',
+  name: 'other_reason',
+  title: 'Please specify:',
+  visibleIf: "{satisfaction} = 'Dissatisfied'",
+}
+```
+
+**Styling:** SurveyJS ships with `defaultV2.min.css`. Override variables in `src/style.css` using the `--sjs-` CSS custom property prefix, or set `survey.applyTheme({ cssVariables: { '--sjs-primary-backcolor': 'var(--color-primary)' } })` to match the site's design tokens.
+
+---
+
+**Option B — Custom survey backed by Supabase**
+
+Use this when the user wants a fully branded, pixel-perfect survey experience with responses stored in their own database.
+
+**Database setup — tell the user to create these tables in Supabase:**
+
+```sql
+-- Surveys table
+create table surveys (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  created_at timestamptz default now()
+);
+
+-- Questions table
+create table questions (
+  id uuid primary key default gen_random_uuid(),
+  survey_id uuid references surveys(id),
+  position int not null,
+  type text not null,       -- 'text' | 'radio' | 'checkbox' | 'scale'
+  label text not null,
+  options jsonb,            -- array of choices for radio/checkbox
+  required boolean default false
+);
+
+-- Responses table
+create table responses (
+  id uuid primary key default gen_random_uuid(),
+  survey_id uuid references surveys(id),
+  answers jsonb not null,   -- { question_id: answer_value }
+  submitted_at timestamptz default now()
+);
+```
+
+**You do — build the survey runner in `src/survey.js`:**
+
+```js
+import { supabase } from './supabase.js'
+
+export async function initSurvey(surveyId, containerId = 'survey') {
+  const container = document.getElementById(containerId)
+  const answers = {}
+  let currentPage = 0
+
+  // Load questions
+  const { data: questions } = await supabase
+    .from('questions')
+    .select('*')
+    .eq('survey_id', surveyId)
+    .order('position')
+
+  function renderQuestion(q) {
+    container.innerHTML = `
+      <div class="survey-step">
+        <p class="survey-label">${q.label}${q.required ? ' *' : ''}</p>
+        ${renderInput(q)}
+        <div class="survey-nav">
+          ${currentPage > 0 ? '<button id="back-btn" class="btn-secondary">Back</button>' : ''}
+          <button id="next-btn" class="btn-primary">${currentPage === questions.length - 1 ? 'Submit' : 'Next'}</button>
+        </div>
+      </div>
+    `
+    document.getElementById('next-btn').addEventListener('click', () => advance(q))
+    document.getElementById('back-btn')?.addEventListener('click', () => { currentPage--; renderQuestion(questions[currentPage]) })
+  }
+
+  function renderInput(q) {
+    if (q.type === 'text') return `<input id="answer" class="survey-input" type="text" value="${answers[q.id] || ''}" />`
+    if (q.type === 'radio') return q.options.map(opt =>
+      `<label class="survey-option"><input type="radio" name="answer" value="${opt}" ${answers[q.id] === opt ? 'checked' : ''}> ${opt}</label>`
+    ).join('')
+    if (q.type === 'scale') return `<input id="answer" type="range" min="1" max="10" value="${answers[q.id] || 5}">`
+    return ''
+  }
+
+  async function advance(q) {
+    const val = q.type === 'radio'
+      ? document.querySelector('input[name="answer"]:checked')?.value
+      : document.getElementById('answer')?.value
+    if (q.required && !val) return // basic validation
+    answers[q.id] = val
+
+    if (currentPage < questions.length - 1) {
+      currentPage++
+      renderQuestion(questions[currentPage])
+    } else {
+      await supabase.from('responses').insert([{ survey_id: surveyId, answers }])
+      container.innerHTML = '<p class="survey-complete">Thanks for your response!</p>'
+    }
+  }
+
+  renderQuestion(questions[currentPage])
+}
+```
+
+**When to use each approach:**
+- SurveyJS: complex branching logic, many question types, faster to build, good enough styling control
+- Custom Supabase: pixel-perfect branded design, responses in your own DB, full control over every interaction
+
+---
+
 ### Add a contact form
 
 Two approaches — pick based on what the user needs:
