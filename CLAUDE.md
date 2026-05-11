@@ -385,6 +385,96 @@ Use `--duration-*` and `--ease-*` from `src/style.css` for timing consistency. T
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 ```
 
+### Add advanced scroll animations (GSAP)
+
+Use GSAP when Motion.dev isn't enough: complex timelines, scroll-pinned sections, scrub-based animations tied to scroll position, or sequenced choreography across multiple elements. Motion.dev is the right default for simple reveals and transitions — reach for GSAP when the animation logic starts to feel limiting.
+
+**You do:**
+
+1. Run `npm install gsap`
+
+2. Register plugins and set up in `src/main.js` (or a dedicated `src/animations.js`):
+   ```js
+   import { gsap } from 'gsap'
+   import { ScrollTrigger } from 'gsap/ScrollTrigger'
+   gsap.registerPlugin(ScrollTrigger)
+
+   // If also using Lenis, wire them together so ScrollTrigger
+   // tracks Lenis scroll position instead of native scroll:
+   lenis?.on('scroll', ScrollTrigger.update)
+   gsap.ticker.add(time => lenis?.raf(time * 1000))
+   gsap.ticker.lagSmoothing(0)
+   ```
+
+3. Respect prefers-reduced-motion — skip or instant-complete animations:
+   ```js
+   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+     gsap.globalTimeline.timeScale(100) // complete all animations instantly
+   }
+   ```
+
+**Key patterns:**
+
+Basic animation (runs immediately):
+```js
+gsap.from('.hero-title', { opacity: 0, y: 40, duration: 0.8, ease: 'power2.out' })
+```
+
+Scroll-triggered reveal:
+```js
+gsap.from('.card', {
+  scrollTrigger: { trigger: '.card', start: 'top 80%', toggleActions: 'play none none reverse' },
+  opacity: 0,
+  y: 60,
+  stagger: 0.1,
+  duration: 0.6,
+  ease: 'power2.out',
+})
+```
+
+Scrub (animation value is tied directly to scroll position):
+```js
+gsap.to('.parallax-image', {
+  scrollTrigger: { trigger: '.section', start: 'top bottom', end: 'bottom top', scrub: true },
+  y: -80,
+})
+```
+
+Pin a section while content animates:
+```js
+gsap.to('.slide-content', {
+  scrollTrigger: {
+    trigger: '.pin-section',
+    start: 'top top',
+    end: '+=600',
+    pin: true,
+    scrub: 1,
+  },
+  x: '-100%',
+})
+```
+
+Timeline (sequence animations with precise control):
+```js
+const tl = gsap.timeline({ defaults: { ease: 'power2.out', duration: 0.6 } })
+tl.from('.nav',      { opacity: 0, y: -20 })
+  .from('.hero-tag', { opacity: 0, y: 10 }, '-=0.3')
+  .from('.hero-h1',  { opacity: 0, y: 20 }, '-=0.4')
+  .from('.hero-cta', { opacity: 0, y: 10 }, '-=0.3')
+```
+
+**When to use each tool:**
+
+| Scenario | Tool |
+|----------|------|
+| Simple fade/slide in on scroll | Motion.dev `inView()` |
+| Entrance animations on load | Motion.dev `animate()` or GSAP |
+| Complex staggered sequences | GSAP timeline |
+| Scrub / scroll-pinned sections | GSAP ScrollTrigger |
+| 3D/WebGL animation values | Motion.dev or GSAP both work |
+
+---
+
 ### Add a 3D scene (Three.js)
 
 Three.js is not pre-installed — install it when the user asks for 3D or WebGL.
@@ -988,6 +1078,263 @@ Swiper is the standard for touch-friendly, responsive carousels. Use it for imag
 | `Thumbs` | `swiper/modules` | Thumbnail navigation |
 
 To override Swiper's default button styles, add CSS to `src/style.css` targeting `.swiper-button-next`, `.swiper-button-prev`, and `.swiper-pagination-bullet`.
+
+---
+
+### Split text for animation (SplitType)
+
+SplitType wraps every character, word, or line of a text element in its own `<span>`, so you can animate them individually. Use it for staggered word reveals, line-by-line entrances, or character scramble effects.
+
+**You do:**
+
+1. Run `npm install split-type`
+
+2. Split and animate:
+   ```js
+   import SplitType from 'split-type'
+   import { gsap } from 'gsap'
+   import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+   // Split into lines (most common for scroll reveals)
+   const split = new SplitType('.section-heading', { types: 'lines' })
+
+   gsap.from(split.lines, {
+     scrollTrigger: { trigger: '.section-heading', start: 'top 85%' },
+     opacity: 0,
+     y: '110%',       // slide up from below the line (clip with overflow:hidden on parent)
+     stagger: 0.08,
+     duration: 0.7,
+     ease: 'power3.out',
+   })
+   ```
+
+   Split types:
+   - `'lines'` — each line of wrapped text becomes a span
+   - `'words'` — each word
+   - `'chars'` — each character (use for scramble/reveal effects)
+   - `'words, chars'` — both at once
+
+3. Clip the overflow so lines slide up from behind the baseline:
+   ```css
+   .section-heading { overflow: hidden; }
+   /* SplitType wraps each line in a div — clip it */
+   .section-heading .line { overflow: hidden; }
+   ```
+
+4. Re-split on window resize (line breaks change at different widths):
+   ```js
+   let resizeTimer
+   window.addEventListener('resize', () => {
+     clearTimeout(resizeTimer)
+     resizeTimer = setTimeout(() => {
+       split.revert()
+       split.split()
+       ScrollTrigger.refresh()
+     }, 200)
+   })
+   ```
+
+---
+
+### Add a text scramble effect
+
+Characters cycle through random values before settling on the real text. No library needed.
+
+Add a `scrambleText` function to `src/effects.js` (create it if it doesn't exist):
+
+```js
+export function scrambleText(element, {
+  duration = 700,
+  chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&',
+} = {}) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+  const original = element.textContent
+  const start = performance.now()
+
+  function update(now) {
+    const progress = Math.min((now - start) / duration, 1)
+    const revealedCount = Math.floor(progress * original.length)
+
+    element.textContent = original
+      .split('')
+      .map((char, i) => {
+        if (char === ' ') return ' '
+        if (i < revealedCount) return char
+        return chars[Math.floor(Math.random() * chars.length)]
+      })
+      .join('')
+
+    if (progress < 1) requestAnimationFrame(update)
+    else element.textContent = original
+  }
+
+  requestAnimationFrame(update)
+}
+```
+
+**Usage:**
+```js
+import { scrambleText } from './effects.js'
+
+// Trigger on hover
+document.querySelectorAll('[data-scramble]').forEach(el => {
+  el.addEventListener('mouseenter', () => scrambleText(el))
+})
+
+// Trigger on page load
+scrambleText(document.querySelector('.nav-logo'))
+
+// Faster with different character set
+scrambleText(el, { duration: 400, chars: '01' })  // binary scramble
+```
+
+Add `data-scramble` attribute to any element in `index.html` to enable hover scramble automatically.
+
+---
+
+### Add a 3D card tilt on mouse move
+
+Cards rotate in 3D to follow the mouse position — a common effect on product marketing sites. No library needed.
+
+Add `initCardTilt` to `src/effects.js`:
+
+```js
+export function initCardTilt(selector = '[data-tilt]', { max = 12, scale = 1.03 } = {}) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  if (window.matchMedia('(pointer: coarse)').matches) return  // skip on touch
+
+  document.querySelectorAll(selector).forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect()
+      const x = (e.clientX - rect.left) / rect.width  - 0.5  // -0.5 to 0.5
+      const y = (e.clientY - rect.top)  / rect.height - 0.5
+      card.style.transform =
+        `perspective(800px) rotateY(${x * max}deg) rotateX(${-y * max}deg) scale(${scale})`
+    })
+
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = 'perspective(800px) rotateY(0deg) rotateX(0deg) scale(1)'
+    })
+  })
+}
+```
+
+Call from `src/main.js`:
+```js
+import { initCardTilt } from './effects.js'
+initCardTilt()
+```
+
+Add to `src/style.css`:
+```css
+[data-tilt] {
+  transition: transform 0.15s ease;
+  will-change: transform;
+}
+```
+
+Add `data-tilt` to any card element in `index.html`. Adjust `max` (rotation degrees) and `scale` (zoom factor) as needed.
+
+---
+
+### Add an interactive dot field background
+
+A grid of dots rendered on canvas that react to mouse proximity — dots grow or brighten near the cursor. Common on SaaS and product marketing sites.
+
+**You do:**
+
+1. Add a container to `index.html` (typically as a background layer in a section):
+   ```html
+   <div id="dot-field" class="dot-field" aria-hidden="true"></div>
+   ```
+
+2. Create `src/dotfield.js`:
+   ```js
+   export function initDotField(containerId = 'dot-field', {
+     spacing = 28,      // gap between dots in px
+     baseRadius = 1.5,  // default dot size
+     hoverRadius = 5,   // dot size at mouse position
+     influence = 120,   // radius of mouse effect in px
+   } = {}) {
+     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+     const container = document.getElementById(containerId)
+     const canvas = document.createElement('canvas')
+     const ctx = canvas.getContext('2d')
+     container.appendChild(canvas)
+
+     let mouseX = -9999, mouseY = -9999
+
+     function resize() {
+       canvas.width  = container.offsetWidth
+       canvas.height = container.offsetHeight
+     }
+     resize()
+     new ResizeObserver(resize).observe(container)
+
+     window.addEventListener('mousemove', e => {
+       const rect = canvas.getBoundingClientRect()
+       mouseX = e.clientX - rect.left
+       mouseY = e.clientY - rect.top
+     })
+     window.addEventListener('mouseleave', () => { mouseX = -9999; mouseY = -9999 })
+
+     // Read the text color once for dot colour
+     const color = getComputedStyle(document.documentElement)
+       .getPropertyValue('--color-text').trim() || '#1a1a1a'
+
+     function draw() {
+       ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+       for (let x = spacing / 2; x < canvas.width; x += spacing) {
+         for (let y = spacing / 2; y < canvas.height; y += spacing) {
+           const dx = mouseX - x
+           const dy = mouseY - y
+           const dist = Math.sqrt(dx * dx + dy * dy)
+           const proximity = Math.max(0, 1 - dist / influence)
+
+           const radius  = baseRadius + proximity * (hoverRadius - baseRadius)
+           const opacity = 0.15 + proximity * 0.7
+
+           ctx.globalAlpha = opacity
+           ctx.fillStyle = color
+           ctx.beginPath()
+           ctx.arc(x, y, radius, 0, Math.PI * 2)
+           ctx.fill()
+         }
+       }
+       ctx.globalAlpha = 1
+       requestAnimationFrame(draw)
+     }
+     draw()
+   }
+   ```
+
+3. Call from `src/main.js`:
+   ```js
+   import { initDotField } from './dotfield.js'
+   initDotField()
+   ```
+
+4. Add to `src/style.css`:
+   ```css
+   .dot-field {
+     position: absolute;   /* or fixed for a full-page background */
+     inset: 0;
+     overflow: hidden;
+     pointer-events: none;
+     z-index: 0;
+   }
+   .dot-field canvas { display: block; width: 100%; height: 100%; }
+   ```
+
+   Make sure the parent element has `position: relative` and `overflow: hidden`.
+
+**Variations:**
+- `spacing: 20` for a denser grid, `spacing: 40` for sparse
+- Change `hoverRadius` and `influence` to control how dramatic the effect is
+- For a static (non-interactive) dot grid with no JS, use an SVG `<pattern>` instead
 
 ---
 

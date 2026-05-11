@@ -320,6 +320,23 @@ scroll(animate('#progress-bar', { scaleX: [0, 1] }))
 
 Use `--duration-*` and `--ease-*` from `src/style.css` for timing consistency.
 
+### Add advanced scroll animations (GSAP)
+
+Use GSAP over Motion.dev for: complex timelines, scroll-pinned sections, scrub animations, sequenced choreography. Motion.dev is fine for simple reveals.
+
+`npm install gsap`. Register plugins: `import { gsap } from 'gsap'; import { ScrollTrigger } from 'gsap/ScrollTrigger'; gsap.registerPlugin(ScrollTrigger)`
+
+If using Lenis, wire together: `lenis?.on('scroll', ScrollTrigger.update); gsap.ticker.add(time => lenis?.raf(time * 1000)); gsap.ticker.lagSmoothing(0)`
+
+Reduced motion: `if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) gsap.globalTimeline.timeScale(100)`
+
+Key patterns:
+- Basic: `gsap.from('.el', { opacity: 0, y: 40, duration: 0.8, ease: 'power2.out' })`
+- Scroll-triggered: add `scrollTrigger: { trigger: '.el', start: 'top 80%', toggleActions: 'play none none reverse' }` to any tween
+- Scrub: `scrollTrigger: { trigger, start, end, scrub: true }` — value tied to scroll position
+- Pin: `scrollTrigger: { trigger, start: 'top top', end: '+=600', pin: true, scrub: 1 }`
+- Timeline: `const tl = gsap.timeline(); tl.from('.a', {...}).from('.b', {...}, '-=0.3')`
+
 ### Add a 3D scene (Three.js)
 
 Three.js is not pre-installed — install it when the user asks for 3D or WebGL.
@@ -559,6 +576,101 @@ const swiper = new Swiper('.swiper', {
 ```
 
 Override default styles in `src/style.css`. Add `Autoplay` module for auto-advancing slides.
+
+### Split text for animation (SplitType)
+
+`npm install split-type`. Wraps chars/words/lines in spans for individual animation.
+
+```js
+import SplitType from 'split-type'
+const split = new SplitType('.heading', { types: 'lines' })
+// split.lines, split.words, split.chars are now arrays of elements — animate them with GSAP or Motion.dev
+```
+
+Add `overflow: hidden` to the element and `.line` children to clip the slide-up effect. Re-split on resize: `window.addEventListener('resize', () => { split.revert(); split.split(); ScrollTrigger.refresh() })`
+
+### Add a text scramble effect
+
+No library needed. Add `scrambleText` to `src/effects.js`:
+
+```js
+export function scrambleText(element, { duration = 700, chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&' } = {}) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const original = element.textContent
+  const start = performance.now()
+  function update(now) {
+    const progress = Math.min((now - start) / duration, 1)
+    const revealed = Math.floor(progress * original.length)
+    element.textContent = original.split('').map((c, i) => {
+      if (c === ' ') return ' '
+      if (i < revealed) return c
+      return chars[Math.floor(Math.random() * chars.length)]
+    }).join('')
+    if (progress < 1) requestAnimationFrame(update)
+    else element.textContent = original
+  }
+  requestAnimationFrame(update)
+}
+```
+
+Usage: `el.addEventListener('mouseenter', () => scrambleText(el))` or add `data-scramble` attribute and wire in a loop.
+
+### Add a 3D card tilt on mouse move
+
+No library. Add `initCardTilt` to `src/effects.js`, call from `src/main.js`. Add `data-tilt` to any card element.
+
+```js
+export function initCardTilt(selector = '[data-tilt]', { max = 12, scale = 1.03 } = {}) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  if (window.matchMedia('(pointer: coarse)').matches) return
+  document.querySelectorAll(selector).forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const r = card.getBoundingClientRect()
+      const x = (e.clientX - r.left) / r.width - 0.5
+      const y = (e.clientY - r.top) / r.height - 0.5
+      card.style.transform = `perspective(800px) rotateY(${x * max}deg) rotateX(${-y * max}deg) scale(${scale})`
+    })
+    card.addEventListener('mouseleave', () => { card.style.transform = '' })
+  })
+}
+```
+
+CSS: `[data-tilt] { transition: transform 0.15s ease; will-change: transform; }`
+
+### Add an interactive dot field background
+
+Canvas 2D grid of dots that grow near the mouse. Create `src/dotfield.js`, call `initDotField()` from `src/main.js`. Add `<div id="dot-field" class="dot-field" aria-hidden="true">` to `index.html`.
+
+```js
+export function initDotField(containerId = 'dot-field', { spacing = 28, baseRadius = 1.5, hoverRadius = 5, influence = 120 } = {}) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const container = document.getElementById(containerId)
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  container.appendChild(canvas)
+  let mouseX = -9999, mouseY = -9999
+  function resize() { canvas.width = container.offsetWidth; canvas.height = container.offsetHeight }
+  resize(); new ResizeObserver(resize).observe(container)
+  window.addEventListener('mousemove', e => { const r = canvas.getBoundingClientRect(); mouseX = e.clientX - r.left; mouseY = e.clientY - r.top })
+  const color = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#1a1a1a'
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    for (let x = spacing / 2; x < canvas.width; x += spacing) {
+      for (let y = spacing / 2; y < canvas.height; y += spacing) {
+        const d = Math.sqrt((mouseX-x)**2 + (mouseY-y)**2)
+        const p = Math.max(0, 1 - d / influence)
+        ctx.globalAlpha = 0.15 + p * 0.7
+        ctx.fillStyle = color
+        ctx.beginPath(); ctx.arc(x, y, baseRadius + p * (hoverRadius - baseRadius), 0, Math.PI * 2); ctx.fill()
+      }
+    }
+    ctx.globalAlpha = 1; requestAnimationFrame(draw)
+  }
+  draw()
+}
+```
+
+CSS: `.dot-field { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }` Parent needs `position: relative`.
 
 ### Site content
 Edit `index.html`. The main content lives inside `<main id="app" class="app">`.
