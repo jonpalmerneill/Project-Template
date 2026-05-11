@@ -2,6 +2,8 @@
 
 Read `CLAUDE.md` for full project context — role, session start behavior, setup flows, Figma integration, common tasks, file map, and constraints.
 
+If `PROJECT.md` exists, read it immediately after CLAUDE.md. Open the session by briefly surfacing what you know from it: what the project is, what was last worked on, any open questions. Update it at the end of every session.
+
 Read the relevant file in `docs/` before implementing any feature:
 
 | File | What's in it |

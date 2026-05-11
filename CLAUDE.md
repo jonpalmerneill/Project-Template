@@ -21,8 +21,9 @@ You are the user's hands. They should never have to open a terminal or edit a fi
 Do these checks automatically, without being asked:
 
 1. **Dependencies**: Check if `node_modules/` exists. If not, run `npm install` and tell the user when it's done.
-2. **Fresh clone detection**: Check if `index.html` contains the comment `TEMPLATE LANDING PAGE`. If it does, this is a fresh clone and the user hasn't built their site yet. Introduce yourself, ask what they want to build, then replace `index.html` with the fresh app scaffold below — do this before starting the dev server.
-3. **Dev server**: Ask if they'd like to start the local preview (`npm run dev`) so they can see changes in their browser as they work.
+2. **Fresh clone detection**: Check if `index.html` contains the comment `TEMPLATE LANDING PAGE`. If it does, this is a fresh clone. Introduce yourself and ask what they want to build. Once they've described it, replace `index.html` with the fresh app scaffold below, then create `PROJECT.md` using the format in "Project memory" — populate "What this is" from what they described, leave other sections empty.
+3. **Project memory**: If `PROJECT.md` exists, read it before doing anything else. Open the session by briefly surfacing what you know: what the project is, what was last worked on, any open questions. Keep it to 2–3 sentences — enough to confirm you're in the right context without recapping everything.
+4. **Dev server**: Ask if they'd like to start the local preview (`npm run dev`) so they can see changes in their browser as they work.
 
 ### Fresh app scaffold
 
@@ -74,7 +75,70 @@ When replacing the landing page on a fresh clone, write this to `index.html`:
 </html>
 ```
 
-After writing the scaffold, ask the user what they'd like to change first — title, content, colors, or something else.
+After writing the scaffold and PROJECT.md, ask the user what they'd like to change first — title, content, colors, or something else.
+
+---
+
+## Project memory
+
+`PROJECT.md` is a living document that accumulates context across sessions. The user never has to re-explain their project — you read it at the start of every session and update it as the work evolves.
+
+### What to track
+
+The file has four sections:
+
+**What this is** — one paragraph. What the site is, who it's for, what it needs to accomplish. Written at first run, updated only if the project direction genuinely changes.
+
+**Preferences** — a bullet list of stylistic and technical preferences observed over time. Update this whenever the user expresses an opinion, even casually. "I hate gradients" is a preference. "Keep it simple" is a preference. "Not a fan of that font" is a preference. These accumulate and shape future decisions without the user having to repeat themselves.
+
+**Open questions** — decisions that came up but weren't resolved. Add items when something is unresolved. Check them off when resolved. Leave checked items in the list so history is preserved.
+
+**Session log** — one entry per session, most recent first. Each entry records what was built, what was decided and why, and anything the user said that reveals constraints or preferences.
+
+### When to update
+
+- When the user mentions a preference, opinion, or constraint — add it to Preferences immediately, don't wait
+- When a significant decision is made — note it in the current session's entry
+- **At the end of every session** — this is the most important update. When the user signals they're done (says "done", "that's all", "thanks", "let's stop", "push it", or similar), update PROJECT.md before doing anything else. Run `date +%Y-%m-%d` to get today's date for the entry header.
+
+### File format
+
+```markdown
+# Project memory
+
+## What this is
+[One paragraph — what the site is, who it's for, what it needs to accomplish]
+
+## Preferences
+- [Observed preference]
+
+## Open questions
+- [ ] [Unresolved decision]
+- [x] [Resolved decision — keep for history]
+
+## Session log
+
+### YYYY-MM-DD
+**Built:** [What was added or changed]
+**Decided:** [Key decisions and the reasoning — especially when the user chose between options]
+**Noted:** [Preferences, constraints, or opinions the user expressed this session]
+```
+
+### What good entries look like
+
+A good session entry is specific, not generic:
+
+> **Built:** Contact form with Formspree, dark mode toggle with system preference detection
+> **Decided:** Formspree over Resend — user wanted no API keys or server code to maintain
+> **Noted:** User wants the form visible without scrolling on mobile; doesn't want a loading spinner ("just make it feel instant")
+
+A bad entry is vague:
+
+> **Built:** Some features
+> **Decided:** Various things
+> **Noted:** User preferences
+
+When you read PROJECT.md at session start, the log should tell you exactly what was built last time and why — not just that something happened.
 
 ---
 
@@ -296,6 +360,7 @@ Find the icon at [lucide.dev](https://lucide.dev) or [heroicons.com](https://her
 | `package.json` | Dependencies and dev scripts. |
 | `.env.example` | Documents required environment variables. |
 | `.env` | Local secrets (gitignored). Copy from `.env.example`. |
+| `PROJECT.md` | Living project memory — read at session start, update at session end. |
 | `docs/` | Detailed implementation flows — read the relevant file before adding a feature. |
 
 ---
