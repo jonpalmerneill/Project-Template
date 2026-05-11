@@ -236,6 +236,102 @@ When the user wants to pull their Figma color/typography/spacing system into the
 ### Change colors
 Edit the `:root` block at the top of `src/style.css`. Every variable has a comment. Interpret requests like "make it dark mode" or "use a green accent" and apply them directly.
 
+### Add a dark / light theme toggle
+
+Switches between light and dark themes using a `data-theme` attribute on `<html>`. Respects the user's system preference by default and remembers their choice in `localStorage`.
+
+**You do:**
+
+1. Add an inline script to `<head>` in `index.html` — before any `<link>` or `<style>` tags — to set the theme before the page paints and prevent a flash of the wrong theme:
+   ```html
+   <script>
+     (function () {
+       const saved  = localStorage.getItem('theme')
+       const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+       document.documentElement.setAttribute('data-theme', saved || system)
+     })()
+   </script>
+   ```
+
+2. Add a toggle button anywhere in `index.html`:
+   ```html
+   <button data-theme-toggle class="theme-toggle" aria-label="Toggle theme">
+     <span class="theme-icon-light">☀</span>
+     <span class="theme-icon-dark">☾</span>
+   </button>
+   ```
+
+3. Create `src/theme.js`:
+   ```js
+   export function initTheme() {
+     const root = document.documentElement
+
+     function setTheme(theme) {
+       root.setAttribute('data-theme', theme)
+       localStorage.setItem('theme', theme)
+     }
+
+     function toggle() {
+       setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark')
+     }
+
+     // Wire all toggle buttons
+     document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
+       btn.addEventListener('click', toggle)
+     })
+
+     // Follow system preference changes only if the user hasn't set a manual preference
+     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+       if (!localStorage.getItem('theme')) {
+         setTheme(e.matches ? 'dark' : 'light')
+       }
+     })
+   }
+   ```
+
+4. Call from `src/main.js`:
+   ```js
+   import { initTheme } from './theme.js'
+   initTheme()
+   ```
+
+5. Add dark theme variables to `src/style.css`. The `:root` block defines the light theme — add a `[data-theme="dark"]` block that overrides only the values that change:
+   ```css
+   /* Light theme (default) */
+   :root {
+     --color-bg:      #ffffff;
+     --color-text:    #111111;
+     --color-primary: #000000;
+     --color-border:  #e0e0e0;
+     --color-surface: #f5f5f5;
+     --color-muted:   #666666;
+   }
+
+   /* Dark theme */
+   [data-theme="dark"] {
+     --color-bg:      #0f0f0f;
+     --color-text:    #f0f0f0;
+     --color-primary: #ffffff;
+     --color-border:  #2a2a2a;
+     --color-surface: #1a1a1a;
+     --color-muted:   #999999;
+   }
+   ```
+
+6. Show/hide the correct icon based on active theme:
+   ```css
+   .theme-icon-dark  { display: none; }
+   [data-theme="dark"] .theme-icon-light { display: none; }
+   [data-theme="dark"] .theme-icon-dark  { display: inline; }
+   ```
+
+**Notes:**
+- The inline `<script>` in step 1 is intentionally synchronous and must run before any CSS — this is the only way to prevent the flash of wrong theme on load
+- All colors in the project should reference CSS variables (`var(--color-bg)`, etc.) — hardcoded hex values won't respond to the theme switch
+- Add `data-theme-toggle` to as many buttons as needed (nav, footer, etc.) — they all work automatically
+
+---
+
 ### Change fonts
 
 **Google Font:**
