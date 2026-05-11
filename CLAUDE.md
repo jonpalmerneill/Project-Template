@@ -384,6 +384,218 @@ import { animate } from 'motion'
 animate(mesh.position, { y: [0, 2] }, { duration: 1, easing: 'ease-in-out' })
 ```
 
+### Add a 2D canvas scene (PixiJS)
+
+PixiJS is not pre-installed — install it when the user asks for 2D WebGL, interactive graphics, sprite animation, or particle systems.
+
+**When to use PixiJS vs Three.js:**
+- PixiJS: 2D games, sprite-based animation, 2D particle systems, interactive canvas graphics, effects like CRT distortion or screen filters
+- Three.js: anything with 3D depth, perspective cameras, 3D models, or a 3D scene
+
+**You do:**
+
+1. Run `npm install pixi.js`
+
+2. Add a container to `index.html` inside `<main id="app" class="app">`:
+   ```html
+   <div id="canvas-container" class="canvas-container"></div>
+   ```
+
+3. Create `src/pixi.js` using this canonical structure — don't skip the reduced-motion check or dispose function:
+   ```js
+   import { Application, Graphics, Sprite, Assets, Text } from 'pixi.js'
+
+   export async function initPixi(containerId = 'canvas-container') {
+     const container = document.getElementById(containerId)
+
+     const app = new Application()
+     await app.init({
+       resizeTo: container,
+       backgroundAlpha: 0,           // transparent — set background: true and backgroundColor if you want a fill
+       antialias: true,
+       resolution: Math.min(window.devicePixelRatio, 2), // cap at 2× — 3× wastes GPU
+       autoDensity: true,
+     })
+     container.appendChild(app.canvas)
+
+     // ── Add objects to app.stage here ──
+     // Graphics (shapes):
+     //   const circle = new Graphics().circle(0, 0, 50).fill(0x3b5bdb)
+     //   app.stage.addChild(circle)
+     //
+     // Sprites (images):
+     //   const texture = await Assets.load('/images/sprite.png')
+     //   const sprite = new Sprite(texture)
+     //   app.stage.addChild(sprite)
+
+     // Animation loop — runs every frame
+     app.ticker.add((ticker) => {
+       const delta = ticker.deltaTime  // frames elapsed since last tick (1 = 60fps)
+       // ── your per-frame animation code here ──
+     })
+
+     // Respect prefers-reduced-motion
+     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)')
+     if (prefersReduced.matches) app.ticker.stop()
+     prefersReduced.addEventListener('change', e => {
+       if (e.matches) app.ticker.stop()
+       else app.ticker.start()
+     })
+
+     // Cleanup
+     function dispose() {
+       app.destroy(true, { children: true, texture: true })
+     }
+
+     return { app, dispose }
+   }
+   ```
+
+4. Call it from `src/main.js`:
+   ```js
+   import { initPixi } from './pixi.js'
+   const { app } = await initPixi()
+   ```
+
+5. Add sizing CSS to `src/style.css`:
+   ```css
+   .canvas-container {
+     width: 100%;
+     height: 100vh; /* adjust to match the design */
+   }
+   ```
+
+**Common PixiJS patterns:**
+
+Particle system:
+```js
+const particles = []
+for (let i = 0; i < 100; i++) {
+  const p = new Graphics().circle(0, 0, 3).fill(0xffffff)
+  p.x = Math.random() * app.screen.width
+  p.y = Math.random() * app.screen.height
+  p.vx = (Math.random() - 0.5) * 2
+  p.vy = (Math.random() - 0.5) * 2
+  app.stage.addChild(p)
+  particles.push(p)
+}
+app.ticker.add(() => {
+  for (const p of particles) {
+    p.x += p.vx
+    p.y += p.vy
+    if (p.x < 0 || p.x > app.screen.width) p.vx *= -1
+    if (p.y < 0 || p.y > app.screen.height) p.vy *= -1
+  }
+})
+```
+
+Built-in filters (blur, color matrix, displacement — no custom GLSL needed):
+```js
+import { BlurFilter, ColorMatrixFilter } from 'pixi.js'
+sprite.filters = [new BlurFilter({ strength: 4 })]
+const cm = new ColorMatrixFilter()
+cm.greyscale(0.5)
+sprite.filters = [cm]
+```
+
+Interactive hit areas:
+```js
+sprite.eventMode = 'static'
+sprite.cursor = 'pointer'
+sprite.on('pointerdown', () => { /* handle click */ })
+```
+
+---
+
+### Add custom GLSL shaders
+
+Use this when the user wants full-screen visual effects (CRT scanlines, distortion, noise, colour grading) or custom materials on Three.js meshes or PixiJS objects. Not pre-installed — add when needed.
+
+**You do:**
+
+1. Run `npm install -D vite-plugin-glsl`
+
+2. Update `vite.config.js` — import and add the plugin:
+   ```js
+   import glsl from 'vite-plugin-glsl'
+   // add glsl() to the plugins array
+   ```
+   After editing, the plugins array should look like:
+   ```js
+   plugins: [
+     glsl(),
+     { name: 'local-api', configureServer(server) { /* existing password middleware */ } },
+   ]
+   ```
+
+3. Create shader files in `src/shaders/`. Use `.vert` for vertex shaders and `.frag` for fragment shaders (or `.glsl` for shared utility code):
+
+   `src/shaders/fullscreen.vert`:
+   ```glsl
+   varying vec2 vUv;
+   void main() {
+     vUv = uv;
+     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+   }
+   ```
+
+   `src/shaders/crt.frag` (example — CRT scanline effect):
+   ```glsl
+   uniform sampler2D tDiffuse;
+   uniform float uTime;
+   varying vec2 vUv;
+
+   void main() {
+     vec2 uv = vUv;
+     // Scanlines
+     float scanline = sin(uv.y * 800.0) * 0.04;
+     // Slight chromatic aberration
+     float r = texture2D(tDiffuse, uv + vec2(0.001, 0.0)).r;
+     float g = texture2D(tDiffuse, uv).g;
+     float b = texture2D(tDiffuse, uv - vec2(0.001, 0.0)).b;
+     gl_FragColor = vec4(r, g, b, 1.0) - scanline;
+   }
+   ```
+
+4. Import and use in JS — Vite handles the import automatically once the plugin is added:
+
+   **With Three.js (ShaderMaterial):**
+   ```js
+   import vertexShader from './shaders/fullscreen.vert'
+   import fragmentShader from './shaders/crt.frag'
+   import * as THREE from 'three'
+
+   const material = new THREE.ShaderMaterial({
+     uniforms: {
+       tDiffuse: { value: null },
+       uTime: { value: 0 },
+     },
+     vertexShader,
+     fragmentShader,
+   })
+
+   // Update uTime each frame
+   app.ticker.add(() => {
+     material.uniforms.uTime.value += 0.016
+   })
+   ```
+
+   **With PixiJS (custom Filter):**
+   ```js
+   import fragmentSrc from './shaders/crt.frag'
+   import { Filter } from 'pixi.js'
+
+   const crtFilter = new Filter({ glProgram: { fragment: fragmentSrc }, resources: {} })
+   app.stage.filters = [crtFilter]
+   ```
+
+**Tips:**
+- Keep shader files small and focused — one effect per file
+- `uTime` is the most common uniform: pass elapsed seconds from the animation loop for animated effects
+- Use [shadertoy.com](https://shadertoy.com) as a reference — most GLSL from there can be adapted to Three.js/PixiJS with minor changes to the coordinate system
+
+---
+
 ### Site content
 Edit `index.html`. The main content lives inside `<main id="app" class="app">`.
 

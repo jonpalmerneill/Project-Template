@@ -319,6 +319,75 @@ Three.js is not pre-installed — install it when the user asks for 3D or WebGL.
    const { scene, camera } = initScene()
    ```
 
+### Add a 2D canvas scene (PixiJS)
+
+PixiJS is not pre-installed — install it when the user asks for 2D WebGL, interactive graphics, sprite animation, or particle systems.
+
+**When to use PixiJS vs Three.js:**
+- PixiJS: 2D games, sprite-based animation, 2D particle systems, interactive canvas, screen filters and effects
+- Three.js: anything with 3D depth, perspective cameras, or 3D models
+
+**You do:**
+
+1. Run `npm install pixi.js`
+2. Add a container to `index.html`: `<div id="canvas-container" class="canvas-container"></div>`
+3. Create `src/pixi.js`:
+   ```js
+   import { Application, Graphics, Sprite, Assets } from 'pixi.js'
+
+   export async function initPixi(containerId = 'canvas-container') {
+     const container = document.getElementById(containerId)
+
+     const app = new Application()
+     await app.init({
+       resizeTo: container,
+       backgroundAlpha: 0,
+       antialias: true,
+       resolution: Math.min(window.devicePixelRatio, 2),
+       autoDensity: true,
+     })
+     container.appendChild(app.canvas)
+
+     // Add objects to app.stage here
+
+     // Respect prefers-reduced-motion
+     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)')
+     if (prefersReduced.matches) app.ticker.stop()
+     prefersReduced.addEventListener('change', e => {
+       if (e.matches) app.ticker.stop()
+       else app.ticker.start()
+     })
+
+     function dispose() {
+       app.destroy(true, { children: true, texture: true })
+     }
+
+     return { app, dispose }
+   }
+   ```
+4. Call from `src/main.js`: `const { app } = await initPixi()`
+5. Add `.canvas-container { width: 100%; height: 100vh; }` to `src/style.css`
+
+Built-in filters (no custom GLSL needed): `import { BlurFilter, ColorMatrixFilter } from 'pixi.js'`
+
+### Add custom GLSL shaders
+
+Use for full-screen effects (CRT, distortion, noise, colour grading) or custom materials on Three.js/PixiJS objects.
+
+**You do:**
+
+1. Run `npm install -D vite-plugin-glsl`
+2. Update `vite.config.js` — add `import glsl from 'vite-plugin-glsl'` at the top and `glsl()` to the plugins array
+3. Create `.vert` / `.frag` files in `src/shaders/`
+4. Import directly in JS — Vite resolves them as strings automatically:
+   ```js
+   import vertexShader from './shaders/fullscreen.vert'
+   import fragmentShader from './shaders/effect.frag'
+   ```
+5. Use with Three.js via `ShaderMaterial`, or with PixiJS via `new Filter({ glProgram: { fragment: fragmentSrc } })`
+
+Key uniforms: pass `uTime` (elapsed seconds) from the animation ticker for animated effects. Use [shadertoy.com](https://shadertoy.com) as a reference — most examples adapt to Three.js/PixiJS with minor coordinate system changes.
+
 ### Site content
 Edit `index.html`. The main content lives inside `<main id="app" class="app">`.
 
