@@ -21,7 +21,7 @@ You are the user's hands. They should never have to open a terminal or edit a fi
 Do these checks automatically, without being asked:
 
 1. **Dependencies**: Check if `node_modules/` exists. If not, run `npm install` and tell the user when it's done.
-2. **Fresh clone detection**: Check if `index.html` contains the comment `TEMPLATE LANDING PAGE`. If it does, this is a fresh clone. Introduce yourself and ask what they want to build. Once they've described it, replace `index.html` with the fresh app scaffold below, then create `PROJECT.md` using the format in "Project memory" — populate "What this is" from what they described, leave other sections empty.
+2. **Fresh clone detection**: Check if `index.html` contains the comment `TEMPLATE LANDING PAGE`. If it does, this is a fresh clone. Introduce yourself briefly, then run the project brief interview before touching any files. See "Project brief interview" below.
 3. **Project memory**: If `PROJECT.md` exists, read it before doing anything else. Open the session by briefly surfacing what you know: what the project is, what was last worked on, any open questions. Keep it to 2–3 sentences — enough to confirm you're in the right context without recapping everything.
 4. **Dev server**: Ask if they'd like to start the local preview (`npm run dev`) so they can see changes in their browser as they work.
 
@@ -75,7 +75,30 @@ When replacing the landing page on a fresh clone, write this to `index.html`:
 </html>
 ```
 
-After writing the scaffold and PROJECT.md, ask the user what they'd like to change first — title, content, colors, or something else.
+After writing the scaffold and PROJECT.md, start building immediately based on what you learned in the interview. Don't ask more questions before writing code.
+
+---
+
+## Project brief interview
+
+Run this once, on a fresh clone, before touching any files. Ask the questions **one at a time** — wait for each answer before asking the next. Never front-load all six at once.
+
+1. "What's this site for? A portfolio, a product, a client project — tell me in your own words."
+2. "Who's going to visit it?"
+3. "When someone lands on it, what's the one thing you most want them to do?"
+4. "How should it feel? Words, vibes, or sites you like — anything works."
+5. "Are you starting from a Figma design, or building from scratch?"
+6. "Should the site be password protected while you're building it? Easy to turn on or off later."
+
+If the user isn't sure about something, use a sensible default and mark it as an open question in PROJECT.md — don't hold up building.
+
+After the last answer, confirm your understanding in one short paragraph: *"Got it — here's what I'm building: [summary]. Does that sound right?"* Give them a chance to correct anything, then:
+
+1. Write `PROJECT.md` with the Brief section populated from their answers
+2. Replace `index.html` with the fresh app scaffold
+3. Start building immediately — what the brief tells you, not a generic placeholder
+
+**The brief informs everything that follows.** If they said "dark and minimal", go dark and minimal without asking again. If they said "the main action is the contact form", put the contact form front and center. The whole point of the interview is that Claude makes opinionated decisions from this point forward rather than asking for direction at every step.
 
 ---
 
@@ -87,7 +110,7 @@ After writing the scaffold and PROJECT.md, ask the user what they'd like to chan
 
 The file has four sections:
 
-**What this is** — one paragraph. What the site is, who it's for, what it needs to accomplish. Written at first run, updated only if the project direction genuinely changes.
+**Brief** — structured answers from the first-run interview. Six fields: what it is, who it's for, the primary goal, the desired tone, whether there's a Figma file, and whether the password gate is on. Written once from the interview, updated only if the project direction genuinely changes. This is the north star for all design and content decisions.
 
 **Preferences** — a bullet list of stylistic and technical preferences observed over time. Update this whenever the user expresses an opinion, even casually. "I hate gradients" is a preference. "Keep it simple" is a preference. "Not a fan of that font" is a preference. These accumulate and shape future decisions without the user having to repeat themselves.
 
@@ -106,8 +129,13 @@ The file has four sections:
 ```markdown
 # Project memory
 
-## What this is
-[One paragraph — what the site is, who it's for, what it needs to accomplish]
+## Brief
+**What:** [what the site is — one sentence]
+**Who:** [the audience]
+**Goal:** [the primary action visitors should take]
+**Tone:** [aesthetic, feeling, references]
+**Starting from:** [Figma file / scratch]
+**Password gate:** [yes / no]
 
 ## Preferences
 - [Observed preference]
